@@ -1,16 +1,15 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { zValidator } from "@hono/zod-validator";
-import { db } from "./db/client";
-import { messages, rooms } from "./db/schema";
 import { createMessageInput, messageDTO } from "@contracts/chat";
+import { createUserInput, userDTO } from "@contracts/users";
+import { createRoomInput, roomDTO } from "@contracts/rooms";
 import { upgradeWebSocket } from "hono/bun";
 import type { WSContext } from "hono/ws";
-import {
-  clientToServerEvent,
-  serverToClientEvent,
-} from "@contracts/events";
+import { clientToServerEvent, serverToClientEvent } from "@contracts/events";
 import { eq } from "drizzle-orm";
+import { db } from "./db/client";
+import { messages, rooms, users } from "./db/schema";
 
 const MOCK_AUTHOR_ID = "8b48593b-18e9-4bc4-9692-6ceb23544636";
 
@@ -19,40 +18,44 @@ const app = new Hono();
 // CORS para frontend en localhost:3000 (o cualquier origen en dev)
 app.use("/*", cors({ origin: "*" }));
 
-// --- API HTTP tipo-safe (basePath /api) ---
-const api = app
-  .basePath("/api")
-  // Crear mensaje
-  .post("/messages", zValidator("json", createMessageInput), async (c) => {
-    const { roomId, content } = c.req.valid("json");
-
-    // TODO: obtener authorId real (usuario logueado); por ahora mock
-    const authorId = MOCK_AUTHOR_ID;
-
-    const [inserted] = await db
-      .insert(messages)
-      .values({ roomId, content, authorId })
-      .returning();
-
-    if (!inserted) return;
-
-    const dto = messageDTO.parse({
-      id: inserted.id,
-      roomId: inserted.roomId,
-      authorId: inserted.authorId,
-      content: inserted.content,
-      createdAt: inserted.createdAt.toISOString(),
-    });
-
-    return c.json(dto);
-  })
-  .get("/rooms", async (c) => {
+// --- Sub-apps ---
+const roomsApp = new Hono()
+  .get("/", async (c) => {
     const rows = await db.select().from(rooms).orderBy(rooms.name);
-
     return c.json(rows);
   })
-  // Listar mensajes de una sala
-  .get("/rooms/:roomId/messages", async (c) => {
+  .post("/", zValidator("json", createRoomInput), async (c) => {
+    const { name } = c.req.valid("json");
+
+    try {
+      const [newRoom] = await db.insert(rooms).values({ name }).returning();
+      if (!newRoom) return c.text("Failed to create room", 500);
+
+      const dto = roomDTO.parse({ id: newRoom.id, name: newRoom.name });
+      return c.json(dto, 201);
+    } catch (error) {
+      console.error("Error creating room:", error);
+      return c.text("Internal Server Error", 500);
+    }
+  })
+  .delete("/:roomId", async (c) => {
+    const roomId = c.req.param("roomId");
+
+    try {
+      await db.delete(messages).where(eq(messages.roomId, roomId));
+      const [deletedRoom] = await db
+        .delete(rooms)
+        .where(eq(rooms.id, roomId))
+        .returning();
+
+      if (!deletedRoom) return c.text("Room not found", 404);
+      return c.json(roomDTO.parse({ id: deletedRoom.id, name: deletedRoom.name }));
+    } catch (error) {
+      console.error("Error deleting room:", error);
+      return c.text("Internal Server Error", 500);
+    }
+  })
+  .get("/:roomId/messages", async (c) => {
     const roomId = c.req.param("roomId");
 
     const rows = await db
@@ -74,6 +77,81 @@ const api = app
     return c.json(result);
   });
 
+const usersApp = new Hono()
+  .post("/", zValidator("json", createUserInput), async (c) => {
+    const { name } = c.req.valid("json");
+
+    try {
+      const [newUser] = await db.insert(users).values({ name }).returning();
+      if (!newUser) return c.text("Failed to create user", 500);
+
+      const dto = userDTO.parse({ id: newUser.id, name: newUser.name });
+      return c.json(dto, 201);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      return c.text("Internal Server Error", 500);
+    }
+  })
+  .get("/:userId", async (c) => {
+    const userId = c.req.param("userId");
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user) return c.text("User not found", 404);
+    return c.json(userDTO.parse({ id: user.id, name: user.name }));
+  });
+
+const messagesApp = new Hono()
+  .post("/", zValidator("json", createMessageInput), async (c) => {
+    const { roomId, content } = c.req.valid("json");
+
+    // TODO: obtener authorId real (usuario logueado); por ahora mock
+    const authorId = MOCK_AUTHOR_ID;
+
+    const [inserted] = await db
+      .insert(messages)
+      .values({ roomId, content, authorId })
+      .returning();
+
+    if (!inserted) return c.text("Failed to create message", 500);
+
+    const dto = messageDTO.parse({
+      id: inserted.id,
+      roomId: inserted.roomId,
+      authorId: inserted.authorId,
+      content: inserted.content,
+      createdAt: inserted.createdAt.toISOString(),
+    });
+
+    return c.json(dto, 201);
+  })
+  .delete("/:messageId", async (c) => {
+    const messageId = c.req.param("messageId");
+    const [deleted] = await db
+      .delete(messages)
+      .where(eq(messages.id, messageId))
+      .returning();
+
+    if (!deleted) return c.text("Message not found", 404);
+    return c.json(messageDTO.parse({
+      id: deleted.id,
+      roomId: deleted.roomId,
+      authorId: deleted.authorId,
+      content: deleted.content,
+      createdAt: deleted.createdAt.toISOString(),
+    }));
+  });
+
+// --- API HTTP tipo-safe (basePath /api) ---
+const api = app
+  .basePath("/api")
+  .route("/rooms", roomsApp)
+  .route("/users", usersApp)
+  .route("/messages", messagesApp);
+
 // --- WebSocket /ws ---
 type RoomId = string;
 const roomSockets = new Map<RoomId, Set<WSContext>>();
@@ -88,7 +166,6 @@ app.get(
         const data = JSON.parse(event.data.toString());
         const parsed = clientToServerEvent.parse(data);
         currentRoom = parsed.roomId;
-        console.log({ data });
 
         if (parsed.type === "join-room") {
           if (!roomSockets.has(currentRoom))
@@ -112,9 +189,7 @@ app.get(
           currentRoom = null;
         }
 
-        console.log({ currentRoom });
         if (parsed.type === "send-message" && currentRoom) {
-          console.log({ returned: parsed.roomId !== currentRoom });
           if (parsed.roomId !== currentRoom) return;
           const [inserted] = await db
             .insert(messages)
