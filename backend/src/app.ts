@@ -3,13 +3,13 @@ import { cors } from "hono/cors";
 import { zValidator } from "@hono/zod-validator";
 import { db } from "./db/client";
 import { messages, rooms } from "./db/schema";
-import { createMessageInput, messageDTO } from "@shared/schemas/chat";
+import { createMessageInput, messageDTO } from "@contracts/chat";
 import { upgradeWebSocket } from "hono/bun";
 import type { WSContext } from "hono/ws";
 import {
   clientToServerEvent,
   serverToClientEvent,
-} from "@shared/schemas/events";
+} from "@contracts/events";
 import { eq } from "drizzle-orm";
 
 const MOCK_AUTHOR_ID = "8b48593b-18e9-4bc4-9692-6ceb23544636";

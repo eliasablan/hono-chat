@@ -2,9 +2,9 @@ import { z } from "zod";
 
 // DTO de mensaje
 export const messageDTO = z.object({
-  id: z.uuid(),
-  roomId: z.uuid(),
-  authorId: z.uuid(),
+  id: z.string().uuid(),
+  roomId: z.string().uuid(),
+  authorId: z.string().uuid(),
   content: z.string().min(1).max(2000),
   createdAt: z.string(), // ISO string
 });
@@ -13,7 +13,7 @@ export type MessageDTO = z.infer<typeof messageDTO>;
 
 // Input para crear mensaje
 export const createMessageInput = z.object({
-  roomId: z.uuid(),
+  roomId: z.string().uuid(),
   content: z.string().min(1).max(2000),
 });
 

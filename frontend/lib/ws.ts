@@ -1,7 +1,7 @@
 import type {
   ServerToClientEvent,
   ClientToServerEvent,
-} from "@shared/schemas/events";
+} from "@contracts/events";
 
 export function connectChatWS(onEvent: (ev: ServerToClientEvent) => void): {
   send: (ev: ClientToServerEvent) => void;

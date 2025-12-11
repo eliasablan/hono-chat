@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ClientToServerEvent } from "@shared/schemas/events";
-import type { MessageDTO } from "@shared/schemas/chat";
+import type { ClientToServerEvent } from "@contracts/events";
+import type { MessageDTO } from "@contracts/chat";
 import { connectChatWS } from "@/lib/ws";
 import { apiClient } from "@/lib/api-client";
 

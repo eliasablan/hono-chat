@@ -20,7 +20,7 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      "@shared/*": ["../shared/src/*"]
+      "@contracts/*": ["../backend/src/contracts/*"]
     },
     "baseUrl": "."
   },

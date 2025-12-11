@@ -10,7 +10,6 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "shared",
     "backend",
     "frontend"
   ]
