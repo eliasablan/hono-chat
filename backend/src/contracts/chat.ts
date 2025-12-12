@@ -6,7 +6,7 @@ export const messageDTO = z.object({
   roomId: z.uuid(),
   authorId: z.uuid(),
   content: z.string().min(1).max(2000),
-  createdAt: z.string(), // ISO string
+  createdAt: z.coerce.date(),
 });
 
 export type MessageDTO = z.infer<typeof messageDTO>;

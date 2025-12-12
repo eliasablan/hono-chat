@@ -19,6 +19,7 @@ export function connectChatWS(onEvent: (ev: ServerToClientEvent) => void): {
       if (ev) ws.send(JSON.stringify(ev));
     }
   });
+
   ws.onmessage = (event) => {
     const data = JSON.parse(event.data) as ServerToClientEvent;
     onEvent(data);

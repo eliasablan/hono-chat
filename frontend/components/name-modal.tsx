@@ -1,7 +1,7 @@
 "use client";
 
 import type { UserDTO } from "@contracts/users";
-import { useNameStore } from "@/lib/hooks/use-name";
+import { useUserStore } from "@/lib/hooks/use-user";
 import {
   ResponsiveModal,
   ResponsiveModalContent,
@@ -16,8 +16,8 @@ import { Button } from "./ui/button";
 import { apiClient } from "@/lib/api-client";
 
 export default function NameModal() {
-  const hasUser = useNameStore((state) => state.hasUser());
-  const storeUser = useNameStore((state) => state.setUser);
+  const hasUser = useUserStore((state) => state.hasUser());
+  const storeUser = useUserStore((state) => state.setUser);
   const [name, setName] = useState("");
 
   const handleSubmit = async () => {

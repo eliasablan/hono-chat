@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-interface NameStore {
+interface UserStore {
   id: string | null;
   name: string;
   setUser: (id: string, name: string) => void;
@@ -9,8 +9,8 @@ interface NameStore {
   clear: () => void;
 }
 
-export const useNameStore = create(
-  persist<NameStore>(
+export const useUserStore = create(
+  persist<UserStore>(
     (set, get) => ({
       id: null,
       name: "",
@@ -27,6 +27,6 @@ export const useNameStore = create(
     {
       name: "chat-storage",
       storage: createJSONStorage(() => localStorage),
-    },
-  ),
+    }
+  )
 );

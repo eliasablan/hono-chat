@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useNameStore } from "@/lib/hooks/use-name";
+import { useUserStore } from "@/lib/hooks/use-user";
 import { UserIcon, XIcon } from "lucide-react";
 
 type Room = {
@@ -18,7 +18,7 @@ export default function HomePage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [newRoom, setNewRoom] = useState("");
   const [loadingRooms, setLoadingRooms] = useState(true);
-  const userName = useNameStore((state) => state.name);
+  const userName = useUserStore((state) => state.name);
 
   useEffect(() => {
     apiClient.api.rooms
@@ -71,50 +71,56 @@ export default function HomePage() {
   };
 
   return (
-    <main className="mx-auto max-w-md space-y-4 p-4">
-      <div className="w-full flex justify-between items-center gap-4">
-        <h1 className="text-2xl font-semibold">Salas de Chat</h1>
-        <p className="text-accent-foreground items-center gap-2 italic inline-flex">
-          <UserIcon className="size-4" />
-          {userName}
-        </p>
+    <main className="w-full h-dvh p-4">
+      <div className="flex h-full bg-background flex-1 flex-col rounded-lg shadow-sm mx-auto max-w-md">
+        <div className="flex items-center justify-between  border-b p-4">
+          <div className="w-full flex justify-between items-center gap-4">
+            <h1 className="text-xl font-semibold">Salas de Chat</h1>
+            <p className="text-accent-foreground items-center gap-2 italic inline-flex">
+              <UserIcon className="size-4" />
+              {userName}
+            </p>
+          </div>
+        </div>
+        <div className="flex-1 space-y-4 overflow-y-auto p-6">
+          <form onSubmit={handleSubmit} className="flex items-center gap-2">
+            <Input
+              placeholder="Nueva sala"
+              value={newRoom}
+              onChange={(e) => setNewRoom(e.target.value)}
+            />
+            <Button disabled={!newRoom}>Crear</Button>
+          </form>
+          {loadingRooms ? (
+            <p>Loading...</p>
+          ) : rooms.length === 0 ? (
+            <p>No hay salas disponibles.</p>
+          ) : (
+            <ul>
+              {rooms.map((room, idx) => (
+                <li
+                  className="flex justify-between items-center gap-2"
+                  key={room.id}
+                >
+                  <Button variant="link" asChild>
+                    <Link href={`/${room.id}`}>
+                      {idx + 1}. {room.name}
+                    </Link>
+                  </Button>
+                  <Button
+                    size="icon-sm"
+                    title="Borrar chat"
+                    variant="link"
+                    onClick={() => handleDelete(room.id)}
+                  >
+                    <XIcon className="text-destructive" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
-      {loadingRooms ? (
-        <p>Loading...</p>
-      ) : rooms.length === 0 ? (
-        <p>No hay salas disponibles.</p>
-      ) : (
-        <ul>
-          {rooms.map((room, idx) => (
-            <li
-              className="flex justify-between items-center gap-2"
-              key={room.id}
-            >
-              <Button variant="link" asChild>
-                <Link href={`/${room.id}`}>
-                  {idx + 1}. {room.name}
-                </Link>
-              </Button>
-              <Button
-                size="icon-sm"
-                title="Borrar chat"
-                variant="link"
-                onClick={() => handleDelete(room.id)}
-              >
-                <XIcon className="text-destructive" />
-              </Button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <form onSubmit={handleSubmit} className="flex items-center gap-2">
-        <Input
-          placeholder="Nueva sala"
-          value={newRoom}
-          onChange={(e) => setNewRoom(e.target.value)}
-        />
-        <Button disabled={!newRoom}>Crear</Button>
-      </form>
     </main>
   );
 }
