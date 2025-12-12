@@ -1,6 +1,6 @@
 "use client";
 
-import type { UserDTO } from "@contracts/users";
+import type { UserDTO } from "@backend/contracts/users";
 import { useUserStore } from "@/lib/hooks/use-user";
 import {
   ResponsiveModal,
@@ -20,7 +20,8 @@ export default function NameModal() {
   const storeUser = useUserStore((state) => state.setUser);
   const [name, setName] = useState("");
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     const trimmedName = name.trim();
     if (!trimmedName) return;
 

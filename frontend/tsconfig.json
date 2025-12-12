@@ -20,7 +20,7 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      "@contracts/*": ["../backend/src/contracts/*"]
+      "@backend/*": ["../backend/src/*"]
     },
     "baseUrl": "."
   },
@@ -32,6 +32,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"],
-  "extends": "../tsconfig.json"
+  "exclude": ["node_modules"]
 }

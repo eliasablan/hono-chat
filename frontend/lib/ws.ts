@@ -1,13 +1,23 @@
 import type {
   ServerToClientEvent,
   ClientToServerEvent,
-} from "@contracts/events";
+} from "@backend/contracts/events";
+
+const fallbackWsUrl =
+  typeof window !== "undefined"
+    ? `${window.location.protocol === "https:" ? "wss" : "ws"}://${
+        window.location.host
+      }/ws`
+    : "ws://localhost:8787/ws";
 
 export function connectChatWS(onEvent: (ev: ServerToClientEvent) => void): {
   send: (ev: ClientToServerEvent) => void;
   close: () => void;
 } {
-  const url = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8787/ws";
+  const url =
+    process.env.NODE_ENV === "production"
+      ? fallbackWsUrl
+      : "ws://localhost:8787/ws";
   const ws = new WebSocket(url);
   const pending: ClientToServerEvent[] = [];
   let isOpen = false;

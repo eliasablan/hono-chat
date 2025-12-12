@@ -3,17 +3,22 @@ import { cors } from "hono/cors";
 import { zValidator } from "@hono/zod-validator";
 import type { WSContext } from "hono/ws";
 import { upgradeWebSocket } from "hono/bun";
+import { logger } from "hono/logger";
 import { db } from "@backend/db/client";
 import z from "zod";
 import { messages, rooms, users } from "@backend/db/schema";
 import { eq } from "drizzle-orm";
-import { createUserInput, userDTO } from "@contracts/users";
-import { createRoomInput, roomDTO } from "@contracts/rooms";
-import { clientToServerEvent, serverToClientEvent } from "@contracts/events";
+import { createUserInput, userDTO } from "@backend/contracts/users";
+import { createRoomInput, roomDTO } from "@backend/contracts/rooms";
+import {
+  clientToServerEvent,
+  serverToClientEvent,
+} from "@backend/contracts/events";
 
 // --- typesafe HTTP API ---
 const app = new Hono();
 app.use("/*", cors({ origin: "*" }));
+app.use(logger());
 
 const roomsApp = new Hono()
   .get("/", async (c) => {

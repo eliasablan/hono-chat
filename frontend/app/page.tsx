@@ -76,7 +76,7 @@ export default function HomePage() {
         <div className="flex items-center justify-between  border-b p-4">
           <div className="w-full flex justify-between items-center gap-4">
             <h1 className="text-xl font-semibold">Salas de Chat</h1>
-            <p className="text-accent-foreground items-center gap-2 italic inline-flex">
+            <p className="text-accent items-center gap-2 italic inline-flex">
               <UserIcon className="size-4" />
               {userName}
             </p>

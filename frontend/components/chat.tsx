@@ -1,16 +1,16 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { apiClient } from "@/lib/api-client";
 import { connectChatWS } from "@/lib/ws";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/lib/hooks/use-user";
-import type { ClientToServerEvent } from "@contracts/events";
-import { type MessageDTO } from "@contracts/chat";
-import type { RoomDTO } from "@contracts/rooms";
+import type { ClientToServerEvent } from "@backend/contracts/events";
+import { type MessageDTO } from "@backend/contracts/chat";
+import type { RoomDTO } from "@backend/contracts/rooms";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -81,6 +81,15 @@ export function ChatMain({ roomId }: { roomId: string }) {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
+  const updateScrollButtonVisibility = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+
+    const canScroll = el.scrollHeight > el.clientHeight;
+    const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 100;
+    setShowScrollButton(canScroll && !isAtBottom);
+  }, []);
+
   // enviar mensaje al servidor por WS
   const handleSend = (e?: React.FormEvent<HTMLFormElement>) => {
     e?.preventDefault();
@@ -110,7 +119,7 @@ export function ChatMain({ roomId }: { roomId: string }) {
       .$get({ param: { roomId } })
       .then(async (res) => {
         if (!res.ok) return;
-        const data = await res.json();
+        const data = (await res.json()) as BubbleMessage[];
         setMessages(data);
       });
 
@@ -158,38 +167,17 @@ export function ChatMain({ roomId }: { roomId: string }) {
     const el = messagesContainerRef.current;
     if (!el) return;
 
-    const updateButtonVisibility = () => {
-      const canScroll = el.scrollHeight > el.clientHeight;
-      const isAtBottom =
-        el.scrollHeight - el.scrollTop - el.clientHeight <= 4; /* px */
-      setShowScrollButton(canScroll && !isAtBottom);
-    };
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry) return;
-        const canScroll = el.scrollHeight > el.clientHeight;
-        setShowScrollButton(canScroll && !entry.isIntersecting);
-      },
-      {
-        root: el,
-        threshold: 1.0,
-      }
-    );
-
-    if (messagesEndRef.current) {
-      observer.observe(messagesEndRef.current);
-    }
-
-    updateButtonVisibility();
-    el.addEventListener("scroll", updateButtonVisibility);
+    updateScrollButtonVisibility();
+    el.addEventListener("scroll", updateScrollButtonVisibility);
 
     return () => {
-      observer.disconnect();
-      el.removeEventListener("scroll", updateButtonVisibility);
+      el.removeEventListener("scroll", updateScrollButtonVisibility);
     };
-  }, []);
+  }, [updateScrollButtonVisibility]);
+
+  useEffect(() => {
+    requestAnimationFrame(() => updateScrollButtonVisibility());
+  }, [messages.length, updateScrollButtonVisibility]);
 
   return (
     <div className="relative flex h-full bg-background flex-1 flex-col rounded-lg shadow-sm mx-auto max-w-md">
@@ -205,7 +193,7 @@ export function ChatMain({ roomId }: { roomId: string }) {
       </div>
 
       <div
-        className="flex-1 space-y-4 overflow-y-auto p-6"
+        className="flex-1 space-y-4 overflow-y-auto p-4"
         ref={messagesContainerRef}
       >
         {messages.map((msg) => (
@@ -228,7 +216,7 @@ export function ChatMain({ roomId }: { roomId: string }) {
 
       <form
         onSubmit={handleSend}
-        className="flex items-center gap-3  border-t p-4"
+        className="flex items-center gap-3 border-t p-4"
       >
         <Input
           placeholder="Escribe tu mensaje..."

@@ -1,0 +1,61 @@
+services:
+  db:
+    restart: unless-stopped
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - db:/var/lib/postgresql/data
+    networks:
+      - hono-chat
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - 127.0.0.1:${PGADMIN_PORT:-5057}:80
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - hono-chat
+  backend:
+    image: ghcr.io/eliasablan/9dec-backend:latest
+    ports:
+      - 127.0.0.1:8787:8787
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      PORT: 8787
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - hono-chat
+  frontend:
+    image: ghcr.io/eliasablan/9dec-frontend:latest
+    ports:
+      - 127.0.0.1:5016:3000
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - hono-chat
+volumes:
+  db: null
+networks:
+  hono-chat:
+    driver: bridge

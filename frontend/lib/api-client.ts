@@ -1,4 +1,7 @@
 import { hc } from "hono/client";
-import type { AppType } from "../../backend/src/app";
+import type { AppType } from "@backend/app";
 
-export const apiClient = hc<AppType>("http://localhost:8787");
+const baseUrl =
+  process.env.NODE_ENV === "production" ? "" : process.env.NEXT_PUBLIC_API_URL!;
+
+export const apiClient = hc<AppType>(baseUrl);
