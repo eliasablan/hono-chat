@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { apiClient } from "@/lib/api-client";
 import { connectChatWS } from "@/lib/ws";
@@ -52,7 +52,7 @@ const MessageBubble = ({ message }: { message: BubbleMessage }) => {
             </AvatarFallback>
           </Avatar>
         </TooltipTrigger>
-        <TooltipContent side="right">
+        <TooltipContent side={isUserMessage ? "left" : "right"}>
           <p>{message.authorName}</p>
           <p>{formatter.format(new Date(message.createdAt))}</p>
         </TooltipContent>
@@ -62,7 +62,7 @@ const MessageBubble = ({ message }: { message: BubbleMessage }) => {
           "max-w-[70%] rounded-lg p-3",
           isUserMessage
             ? "bg-primary text-primary-foreground rounded-br-none"
-            : "bg-accent rounded-bl-none"
+            : "bg-secondary text-secondary-foreground rounded-bl-none"
         )}
       >
         <p className="text-sm">{message.content}</p>
@@ -75,8 +75,11 @@ export function ChatMain({ roomId }: { roomId: string }) {
   const [messages, setMessages] = useState<BubbleMessage[]>([]);
   const [roomName, setRoomName] = useState("");
   const [content, setContent] = useState("");
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const userId = useUserStore((state) => state.id);
   const socketRef = useRef<ReturnType<typeof connectChatWS> | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
   // enviar mensaje al servidor por WS
   const handleSend = (e?: React.FormEvent<HTMLFormElement>) => {
@@ -147,8 +150,49 @@ export function ChatMain({ roomId }: { roomId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length]);
+
+  useEffect(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+
+    const updateButtonVisibility = () => {
+      const canScroll = el.scrollHeight > el.clientHeight;
+      const isAtBottom =
+        el.scrollHeight - el.scrollTop - el.clientHeight <= 4; /* px */
+      setShowScrollButton(canScroll && !isAtBottom);
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        const canScroll = el.scrollHeight > el.clientHeight;
+        setShowScrollButton(canScroll && !entry.isIntersecting);
+      },
+      {
+        root: el,
+        threshold: 1.0,
+      }
+    );
+
+    if (messagesEndRef.current) {
+      observer.observe(messagesEndRef.current);
+    }
+
+    updateButtonVisibility();
+    el.addEventListener("scroll", updateButtonVisibility);
+
+    return () => {
+      observer.disconnect();
+      el.removeEventListener("scroll", updateButtonVisibility);
+    };
+  }, []);
+
   return (
-    <div className="flex h-full bg-background flex-1 flex-col rounded-lg shadow-sm mx-auto max-w-md">
+    <div className="relative flex h-full bg-background flex-1 flex-col rounded-lg shadow-sm mx-auto max-w-md">
       <div className="flex items-center justify-between  border-b p-4">
         <div className="w-full flex justify-between items-center gap-4">
           <Button size="icon" variant="ghost" asChild>
@@ -160,11 +204,27 @@ export function ChatMain({ roomId }: { roomId: string }) {
         </div>
       </div>
 
-      <div className="flex-1 space-y-4 overflow-y-auto p-6">
+      <div
+        className="flex-1 space-y-4 overflow-y-auto p-6"
+        ref={messagesContainerRef}
+      >
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
+        <div ref={messagesEndRef} />
       </div>
+
+      {showScrollButton && (
+        <Button
+          size="icon"
+          className="absolute bg-primary/50 right-1/2 translate-x-1/2  bottom-24 shadow"
+          onClick={() =>
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+          }
+        >
+          <ArrowDown />
+        </Button>
+      )}
 
       <form
         onSubmit={handleSend}
