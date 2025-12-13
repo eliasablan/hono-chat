@@ -191,8 +191,8 @@ app.get(
             typeof raw === "string"
               ? raw
               : raw instanceof Blob
-              ? await raw.text()
-              : new TextDecoder().decode(new Uint8Array(raw));
+                ? await raw.text()
+                : new TextDecoder().decode(new Uint8Array(raw));
           parsed = clientToServerEvent.parse(JSON.parse(text));
         } catch (error) {
           console.error("WS invalid message:", error);
