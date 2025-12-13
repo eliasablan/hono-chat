@@ -6,13 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardTitle,
-  CardAction,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import {
   InputGroup,
   InputGroupAddon,
@@ -109,13 +103,13 @@ export default function HomePage() {
 
   return (
     <main className="h-dvh w-full p-4">
-      <Card className="relative mx-auto h-full max-w-md flex-1 gap-0 py-0">
-        <CardHeader className="flex items-center justify-between border-b p-4!">
+      <Card className="bg-popover relative mx-auto h-full max-w-md flex-1 gap-0 overflow-hidden py-0">
+        <CardHeader className="bg-muted flex h-17 items-center justify-between border-b p-4!">
           <CardTitle>Salas de Chat</CardTitle>
-          <CardAction className="text-accent inline-flex items-center gap-2 italic">
+          <div className="text-accent inline-flex items-center gap-2 italic">
             <UserIcon className="size-4" />
             <span className="leading-none">{userName}</span>
-          </CardAction>
+          </div>
         </CardHeader>
 
         <CardContent className="flex-1 space-y-4 overflow-y-auto p-4!">
@@ -126,7 +120,7 @@ export default function HomePage() {
           ) : (
             <>
               <div className="flex items-center justify-between gap-4">
-                <InputGroup>
+                <InputGroup className="bg-muted">
                   <InputGroupInput
                     placeholder="Buscar..."
                     value={searchInput}
@@ -145,7 +139,7 @@ export default function HomePage() {
                 {filteredRooms.map((room) => (
                   <Link
                     href={`/${room.id}`}
-                    className="hover:bg-muted flex items-center justify-between gap-2"
+                    className="hover:bg-accent hover:text-accent-foreground group flex items-center justify-between gap-2"
                     key={room.id}
                   >
                     <span className="px-2 text-sm">{room.name}</span>
@@ -156,7 +150,7 @@ export default function HomePage() {
                       variant="link"
                       onClick={(e) => handleDelete(e, room.id)}
                     >
-                      <XIcon className="text-destructive" />
+                      <XIcon className="text-destructive group-hover:text-primary-foreground" />
                     </Button>
                   </Link>
                 ))}

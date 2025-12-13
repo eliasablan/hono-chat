@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { apiClient } from "@/lib/api-client";
 import { connectChatWS } from "@/lib/ws";
@@ -13,7 +13,6 @@ import { type MessageDTO } from "@backend/contracts/chat";
 import type { RoomDTO } from "@backend/contracts/rooms";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
 import {
   Tooltip,
   TooltipTrigger,
@@ -25,6 +24,12 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+} from "@/components/ui/input-group";
+import TextareaAutosize from "react-textarea-autosize";
 
 const formatter = new Intl.DateTimeFormat("es-ES", {
   year: "numeric",
@@ -194,8 +199,8 @@ export function ChatMain({ roomId }: { roomId: string }) {
   }, [messages.length, updateScrollButtonVisibility]);
 
   return (
-    <Card className="relative mx-auto h-full max-w-md flex-1 gap-0 py-0">
-      <CardHeader className="flex items-center justify-between border-b p-4!">
+    <Card className="bg-popover relative mx-auto h-full max-w-md flex-1 gap-0 overflow-hidden py-0">
+      <CardHeader className="bg-muted flex h-17 items-center justify-between border-b p-4!">
         <Button size="icon-sm" variant="ghost" asChild>
           <Link href="/">
             <ArrowLeft className="size-4" />
@@ -237,17 +242,30 @@ export function ChatMain({ roomId }: { roomId: string }) {
         </Button>
       )}
 
-      <CardFooter className="border-t p-4!">
-        <form onSubmit={handleSend} className="flex w-full items-center gap-3">
-          <Input
-            placeholder="Escribe tu mensaje aquí..."
-            className="flex-1 focus-visible:ring-0 focus-visible:ring-offset-0"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-          />
-          <Button size="icon" className="rounded-full">
-            <ArrowRight />
-          </Button>
+      <CardFooter className="bg-muted border-t p-4!">
+        <form
+          onSubmit={handleSend}
+          className="bg-muted flex w-full items-center gap-3"
+        >
+          <InputGroup className="bg-popover border-border border">
+            <TextareaAutosize
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              data-slot="input-group-control"
+              className="flex field-sizing-content max-h-32 min-h-16 w-full resize-none rounded-md px-3 py-2.5 text-base outline-none md:text-sm"
+              placeholder="Escribe tu mensaje aquí..."
+            />
+            <InputGroupAddon align="block-end">
+              <InputGroupButton
+                type="submit"
+                className="ml-auto"
+                variant="default"
+                size="sm"
+              >
+                Enviar
+              </InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
         </form>
       </CardFooter>
     </Card>
