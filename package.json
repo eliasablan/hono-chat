@@ -1,5 +1,5 @@
 {
-  "name": "9dec",
+  "name": "hono-chat",
   "module": "index.ts",
   "devDependencies": {
     "@types/bun": "latest"

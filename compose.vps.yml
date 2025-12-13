@@ -32,7 +32,7 @@ services:
     networks:
       - hono-chat
   backend:
-    image: ghcr.io/eliasablan/9dec-backend:latest
+    image: ghcr.io/eliasablan/hono-chat-backend:latest
     ports:
       - 127.0.0.1:8787:8787
     restart: unless-stopped
@@ -45,7 +45,7 @@ services:
     networks:
       - hono-chat
   frontend:
-    image: ghcr.io/eliasablan/9dec-frontend:latest
+    image: ghcr.io/eliasablan/hono-chat-frontend:latest
     ports:
       - 127.0.0.1:5016:3000
     restart: unless-stopped

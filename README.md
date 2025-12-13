@@ -1,4 +1,4 @@
-# 9dec
+# hono-chat
 
 Monorepo (Bun workspaces) con:
 
@@ -60,7 +60,7 @@ Abrí `http://localhost:3000`.
 El backend usa:
 
 - `PORT` (default `8787`)
-- `DATABASE_URL` (requerida, ej. `postgres://user:pass@localhost:5432/test-9dec`)
+- `DATABASE_URL` (requerida, ej. `postgres://user:pass@localhost:5432/test-hono-chat`)
 
 Los campos `DB_*` existen en `backend/.env` pero el código conecta usando únicamente `DATABASE_URL` (ver `backend/src/db/client.ts`).
 
@@ -223,7 +223,7 @@ Imágenes/build:
 
 ### `compose.vps.yml` (VPS)
 
-Orienta el deploy usando imágenes `ghcr.io/eliasablan/9dec-*` e incluye `pgadmin`.
+Orienta el deploy usando imágenes `ghcr.io/eliasablan/hono-chat-*` e incluye `pgadmin`.
 
 ## Scripts útiles
 

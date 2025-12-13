@@ -1,6 +1,6 @@
 services:
   backend:
-    image: ghcr.io/eliasablan/9dec-backend:latest
+    image: ghcr.io/eliasablan/hono-chat-backend:latest
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -8,7 +8,7 @@ services:
         - linux/amd64
 
   frontend:
-    image: ghcr.io/eliasablan/9dec-frontend:latest
+    image: ghcr.io/eliasablan/hono-chat-frontend:latest
     build:
       context: .
       dockerfile: frontend/Dockerfile
@@ -24,7 +24,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-test-9dec}
+      POSTGRES_DB: ${POSTGRES_DB:-test-hono-chat}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:

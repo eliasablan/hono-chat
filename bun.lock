@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "9dec",
+      "name": "hono-chat",
       "devDependencies": {
         "@types/bun": "latest",
       },
