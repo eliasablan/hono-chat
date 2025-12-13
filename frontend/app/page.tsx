@@ -114,53 +114,54 @@ export default function HomePage() {
           <CardTitle>Salas de Chat</CardTitle>
           <CardAction className="text-accent inline-flex items-center gap-2 italic">
             <UserIcon className="size-4" />
-            {userName}
+            <span className="leading-none">{userName}</span>
           </CardAction>
         </CardHeader>
 
         <CardContent className="flex-1 space-y-4 overflow-y-auto p-4!">
-          <div className="flex items-center justify-between gap-4">
-            <InputGroup>
-              <InputGroupInput
-                placeholder="Buscar..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
-              <InputGroupAddon>
-                <Search />
-              </InputGroupAddon>
-              <InputGroupAddon align="inline-end">
-                {filteredRooms.length} resultado
-                {filteredRooms.length > 1 && "s"}
-              </InputGroupAddon>
-            </InputGroup>
-          </div>
-
           {loadingRooms ? (
             <p className="text-sm italic">Cargando...</p>
           ) : filteredRooms.length === 0 ? (
             <p className="text-sm italic">No existen salas.</p>
           ) : (
-            <ul>
-              {filteredRooms.map((room) => (
-                <Link
-                  href={`/${room.id}`}
-                  className="hover:bg-muted flex items-center justify-between gap-2"
-                  key={room.id}
-                >
-                  <span className="px-2 text-sm">{room.name}</span>
-                  <Button
-                    size="icon-sm"
-                    className="cursor-pointer"
-                    title="Borrar chat"
-                    variant="link"
-                    onClick={(e) => handleDelete(e, room.id)}
+            <>
+              <div className="flex items-center justify-between gap-4">
+                <InputGroup>
+                  <InputGroupInput
+                    placeholder="Buscar..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                  />
+                  <InputGroupAddon>
+                    <Search />
+                  </InputGroupAddon>
+                  <InputGroupAddon align="inline-end">
+                    {filteredRooms.length} resultado
+                    {filteredRooms.length > 1 && "s"}
+                  </InputGroupAddon>
+                </InputGroup>
+              </div>
+              <ul>
+                {filteredRooms.map((room) => (
+                  <Link
+                    href={`/${room.id}`}
+                    className="hover:bg-muted flex items-center justify-between gap-2"
+                    key={room.id}
                   >
-                    <XIcon className="text-destructive" />
-                  </Button>
-                </Link>
-              ))}
-            </ul>
+                    <span className="px-2 text-sm">{room.name}</span>
+                    <Button
+                      size="icon-sm"
+                      className="cursor-pointer"
+                      title="Borrar chat"
+                      variant="link"
+                      onClick={(e) => handleDelete(e, room.id)}
+                    >
+                      <XIcon className="text-destructive" />
+                    </Button>
+                  </Link>
+                ))}
+              </ul>
+            </>
           )}
         </CardContent>
 

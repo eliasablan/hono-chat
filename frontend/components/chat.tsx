@@ -79,13 +79,19 @@ const MessageBubble = ({ message }: { message: BubbleMessage }) => {
 
 export function ChatMain({ roomId }: { roomId: string }) {
   const [messages, setMessages] = useState<BubbleMessage[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(true);
+
   const [roomName, setRoomName] = useState("");
+  const [loadingRoomName, setLoadingRoomName] = useState(true);
+
   const [content, setContent] = useState("");
+
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const userId = useUserStore((state) => state.id);
-  const socketRef = useRef<ReturnType<typeof connectChatWS> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const userId = useUserStore((state) => state.id);
+  const socketRef = useRef<ReturnType<typeof connectChatWS> | null>(null);
 
   const updateScrollButtonVisibility = useCallback(() => {
     const el = messagesContainerRef.current;
@@ -127,6 +133,7 @@ export function ChatMain({ roomId }: { roomId: string }) {
         if (!res.ok) return;
         const data = (await res.json()) as BubbleMessage[];
         setMessages(data);
+        setLoadingMessages(false);
       });
 
     // cargar nombre de la sala desde HTTP
@@ -136,6 +143,7 @@ export function ChatMain({ roomId }: { roomId: string }) {
         if (!res.ok) return;
         const data = (await res.json()) as RoomDTO;
         setRoomName(data.name ?? "");
+        setLoadingRoomName(false);
       });
 
     // actualizar mensajes por evento del WS del servidor
@@ -200,16 +208,20 @@ export function ChatMain({ roomId }: { roomId: string }) {
         className="flex-1 space-y-4 overflow-y-auto p-4!"
         ref={messagesContainerRef}
       >
-        {(!messages || messages.length === 0) && (
-          <div className="w-full text-center">
-            <p className="text-lg font-medium italic">
-              Bienvenido a la sala <b>{roomName}</b>
-            </p>
-          </div>
+        {(!messages || messages.length === 0) &&
+          !loadingMessages &&
+          !loadingRoomName && (
+            <div className="w-full text-center">
+              <p className="text-lg font-medium italic">
+                Bienvenido a la sala <b>{roomName}</b>
+              </p>
+            </div>
+          )}
+        {loadingMessages ? (
+          <p className="text-sm italic">Cargando...</p>
+        ) : (
+          messages.map((msg) => <MessageBubble key={msg.id} message={msg} />)
         )}
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
-        ))}
         <div ref={messagesEndRef} />
       </CardContent>
 
@@ -228,7 +240,7 @@ export function ChatMain({ roomId }: { roomId: string }) {
       <CardFooter className="border-t p-4!">
         <form onSubmit={handleSend} className="flex w-full items-center gap-3">
           <Input
-            placeholder="Escribe tu mensaje..."
+            placeholder="Escribe tu mensaje aquí..."
             className="flex-1 focus-visible:ring-0 focus-visible:ring-offset-0"
             value={content}
             onChange={(e) => setContent(e.target.value)}
