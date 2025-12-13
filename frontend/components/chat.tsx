@@ -19,6 +19,12 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 
 const formatter = new Intl.DateTimeFormat("es-ES", {
   year: "numeric",
@@ -40,7 +46,7 @@ const MessageBubble = ({ message }: { message: BubbleMessage }) => {
     <div
       className={cn(
         "flex items-end gap-3",
-        isUserMessage && "flex-row-reverse"
+        isUserMessage && "flex-row-reverse",
       )}
     >
       <Tooltip>
@@ -62,7 +68,7 @@ const MessageBubble = ({ message }: { message: BubbleMessage }) => {
           "max-w-[70%] rounded-lg p-3",
           isUserMessage
             ? "bg-primary text-primary-foreground rounded-br-none"
-            : "bg-secondary text-secondary-foreground rounded-bl-none"
+            : "bg-secondary text-secondary-foreground rounded-bl-none",
         )}
       >
         <p className="text-sm">{message.content}</p>
@@ -86,7 +92,7 @@ export function ChatMain({ roomId }: { roomId: string }) {
     if (!el) return;
 
     const canScroll = el.scrollHeight > el.clientHeight;
-    const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 100;
+    const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 150;
     setShowScrollButton(canScroll && !isAtBottom);
   }, []);
 
@@ -180,32 +186,37 @@ export function ChatMain({ roomId }: { roomId: string }) {
   }, [messages.length, updateScrollButtonVisibility]);
 
   return (
-    <div className="relative flex h-full bg-background flex-1 flex-col rounded-lg shadow-sm mx-auto max-w-md">
-      <div className="flex items-center justify-between  border-b p-4">
-        <div className="w-full flex justify-between items-center gap-4">
-          <Button size="icon" variant="ghost" asChild>
-            <Link href="/">
-              <ArrowLeft className="size-4" />
-            </Link>
-          </Button>
-          <h1 className="text-xl font-semibold">{roomName}</h1>
-        </div>
-      </div>
+    <Card className="relative mx-auto h-full max-w-md flex-1 gap-0 py-0">
+      <CardHeader className="flex items-center justify-between border-b p-4!">
+        <Button size="icon-sm" variant="ghost" asChild>
+          <Link href="/">
+            <ArrowLeft className="size-4" />
+          </Link>
+        </Button>
+        <h1 className="leading-none font-semibold">{roomName}</h1>
+      </CardHeader>
 
-      <div
-        className="flex-1 space-y-4 overflow-y-auto p-4"
+      <CardContent
+        className="flex-1 space-y-4 overflow-y-auto p-4!"
         ref={messagesContainerRef}
       >
+        {(!messages || messages.length === 0) && (
+          <div className="w-full text-center">
+            <p className="text-lg font-medium italic">
+              Bienvenido a la sala <b>{roomName}</b>
+            </p>
+          </div>
+        )}
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
         <div ref={messagesEndRef} />
-      </div>
+      </CardContent>
 
       {showScrollButton && (
         <Button
           size="icon"
-          className="absolute bg-primary/50 right-1/2 translate-x-1/2  bottom-24 shadow"
+          className="bg-primary/70 absolute right-1/2 bottom-24 translate-x-1/2 shadow"
           onClick={() =>
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
           }
@@ -214,20 +225,19 @@ export function ChatMain({ roomId }: { roomId: string }) {
         </Button>
       )}
 
-      <form
-        onSubmit={handleSend}
-        className="flex items-center gap-3 border-t p-4"
-      >
-        <Input
-          placeholder="Escribe tu mensaje..."
-          className="flex-1 focus-visible:ring-0 focus-visible:ring-offset-0"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-        />
-        <Button size="icon" className="rounded-full">
-          <ArrowRight />
-        </Button>
-      </form>
-    </div>
+      <CardFooter className="border-t p-4!">
+        <form onSubmit={handleSend} className="flex w-full items-center gap-3">
+          <Input
+            placeholder="Escribe tu mensaje..."
+            className="flex-1 focus-visible:ring-0 focus-visible:ring-offset-0"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+          />
+          <Button size="icon" className="rounded-full">
+            <ArrowRight />
+          </Button>
+        </form>
+      </CardFooter>
+    </Card>
   );
 }
