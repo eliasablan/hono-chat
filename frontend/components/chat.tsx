@@ -73,7 +73,7 @@ const MessageBubble = ({ message }: { message: BubbleMessage }) => {
           "max-w-[70%] rounded-lg p-3",
           isUserMessage
             ? "bg-primary text-primary-foreground rounded-br-none"
-            : "bg-secondary text-secondary-foreground rounded-bl-none",
+            : "bg-muted-foreground text-muted rounded-bl-none",
         )}
       >
         <p className="text-sm">{message.content}</p>
