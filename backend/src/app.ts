@@ -4,6 +4,7 @@ import { zValidator } from "@hono/zod-validator";
 import type { WSContext } from "hono/ws";
 import { upgradeWebSocket } from "hono/bun";
 import { logger } from "hono/logger";
+import type { ServerWebSocket } from "bun";
 import { db } from "@backend/db/client";
 import z from "zod";
 import { messages, rooms, users } from "@backend/db/schema";
@@ -131,7 +132,47 @@ const api = app
 
 // --- WebSocket ---
 type RoomId = string;
-const roomSockets = new Map<RoomId, Set<WSContext>>();
+type Socket = ServerWebSocket;
+const roomSockets = new Map<RoomId, Set<Socket>>();
+
+function getOrCreateRoomClients(roomId: RoomId): Set<Socket> {
+  const existing = roomSockets.get(roomId);
+  if (existing) return existing;
+
+  const clients = new Set<Socket>();
+  roomSockets.set(roomId, clients);
+  return clients;
+}
+
+function removeSocketFromAllRooms(socket: Socket) {
+  for (const [roomId, clients] of roomSockets) {
+    if (!clients.delete(socket)) continue;
+    if (clients.size === 0) roomSockets.delete(roomId);
+  }
+}
+
+function broadcastToRoom(roomId: RoomId, payload: unknown) {
+  const clients = roomSockets.get(roomId);
+  if (!clients) return;
+
+  const message = JSON.stringify(payload);
+
+  for (const client of clients) {
+    if (client.readyState !== 1) {
+      clients.delete(client);
+      continue;
+    }
+
+    try {
+      const status = client.send(message);
+      if (status === 0) clients.delete(client);
+    } catch {
+      clients.delete(client);
+    }
+  }
+
+  if (clients.size === 0) roomSockets.delete(roomId);
+}
 
 app.get(
   "/ws",
@@ -140,74 +181,115 @@ app.get(
 
     return {
       async onMessage(event, ws) {
-        const data = JSON.parse(event.data.toString());
-        const parsed = clientToServerEvent.parse(data);
-        currentRoom = parsed.roomId;
+        const socket = ws.raw as Socket | undefined;
+        if (!socket) return;
 
-        if (parsed.type === "join-room") {
-          if (!roomSockets.has(currentRoom))
-            roomSockets.set(currentRoom, new Set());
-          roomSockets.get(currentRoom)!.add(ws);
-
-          const payload = serverToClientEvent.parse({
-            type: "room-joined",
-            roomId: currentRoom,
-          });
-          ws.send(JSON.stringify(payload));
+        let parsed: z.infer<typeof clientToServerEvent>;
+        try {
+          const raw = event.data;
+          const text =
+            typeof raw === "string"
+              ? raw
+              : raw instanceof Blob
+              ? await raw.text()
+              : new TextDecoder().decode(new Uint8Array(raw));
+          parsed = clientToServerEvent.parse(JSON.parse(text));
+        } catch (error) {
+          console.error("WS invalid message:", error);
+          return;
         }
 
-        if (parsed.type === "leave-room" && currentRoom) {
-          roomSockets.get(currentRoom)?.delete(ws);
-          const payload = serverToClientEvent.parse({
-            type: "room-left",
-            roomId: currentRoom,
-          });
-          ws.send(JSON.stringify(payload));
-          currentRoom = null;
-        }
+        try {
+          if (parsed.type === "join-room") {
+            removeSocketFromAllRooms(socket);
+            currentRoom = parsed.roomId;
 
-        if (parsed.type === "send-message" && currentRoom) {
-          if (parsed.roomId !== currentRoom) return;
+            const clients = getOrCreateRoomClients(currentRoom);
+            clients.add(socket);
 
-          const [createdMessage] = await db
-            .insert(messages)
-            .values({
+            const payload = serverToClientEvent.parse({
+              type: "room-joined",
               roomId: currentRoom,
-              authorId: parsed.authorId,
-              content: parsed.content,
-            })
-            .returning();
-
-          if (!createdMessage) return;
-
-          const [user] = await db
-            .select()
-            .from(users)
-            .where(eq(users.id, createdMessage.authorId))
-            .limit(1);
-          if (!user) return;
-          const message = { ...createdMessage, authorName: user?.name };
-
-          const payload = serverToClientEvent.parse({
-            type: "message-created",
-            message,
-          });
-
-          const clients = roomSockets.get(currentRoom) ?? new Set();
-          for (const client of clients) {
-            client.send(JSON.stringify(payload));
+            });
+            socket.send(JSON.stringify(payload));
+            return;
           }
+
+          if (parsed.type === "leave-room") {
+            if (currentRoom !== parsed.roomId) return;
+            removeSocketFromAllRooms(socket);
+
+            const payload = serverToClientEvent.parse({
+              type: "room-left",
+              roomId: parsed.roomId,
+            });
+            socket.send(JSON.stringify(payload));
+            currentRoom = null;
+            return;
+          }
+
+          if (parsed.type === "send-message") {
+            const roomId = parsed.roomId;
+
+            if (currentRoom !== roomId) {
+              removeSocketFromAllRooms(socket);
+              currentRoom = roomId;
+              getOrCreateRoomClients(roomId).add(socket);
+            }
+
+            try {
+              const [createdMessage] = await db
+                .insert(messages)
+                .values({
+                  roomId,
+                  authorId: parsed.authorId,
+                  content: parsed.content,
+                })
+                .returning();
+
+              if (!createdMessage) return;
+
+              const [user] = await db
+                .select()
+                .from(users)
+                .where(eq(users.id, createdMessage.authorId))
+                .limit(1);
+              if (!user) return;
+              const message = { ...createdMessage, authorName: user.name };
+
+              const payload = serverToClientEvent.parse({
+                type: "message-created",
+                message,
+              });
+
+              broadcastToRoom(roomId, payload);
+            } catch (error) {
+              console.error("WS send-message error:", error);
+              try {
+                socket.send(
+                  JSON.stringify({
+                    type: "error",
+                    code: "message-create-failed",
+                    roomId,
+                  })
+                );
+              } catch {}
+            }
+          }
+        } catch (error) {
+          console.error("WS handler error:", error);
         }
       },
       onClose(_event, ws) {
-        if (!currentRoom) return;
-
-        roomSockets.get(currentRoom)?.delete(ws);
-
-        if (roomSockets.get(currentRoom)?.size === 0) {
-          roomSockets.delete(currentRoom);
-        }
-
+        const socket = ws.raw as Socket | undefined;
+        if (!socket) return;
+        removeSocketFromAllRooms(socket);
+        currentRoom = null;
+      },
+      onError(_event, ws) {
+        const socket = ws.raw as Socket | undefined;
+        if (!socket) return;
+        removeSocketFromAllRooms(socket);
         currentRoom = null;
       },
     };
