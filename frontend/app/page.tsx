@@ -166,7 +166,10 @@ export default function HomePage() {
 
         <ResponsiveModal open={modalOpen} onOpenChange={setModalOpen}>
           <ResponsiveModalTrigger asChild>
-            <Button className="absolute right-4 bottom-4" size="icon">
+            <Button
+              className="absolute right-4 bottom-4 cursor-pointer rounded-full"
+              size="icon-lg"
+            >
               <PlusIcon />
             </Button>
           </ResponsiveModalTrigger>
