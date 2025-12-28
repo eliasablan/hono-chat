@@ -30,6 +30,7 @@ import {
   InputGroupButton,
 } from "@/components/ui/input-group";
 import TextareaAutosize from "react-textarea-autosize";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const formatter = new Intl.DateTimeFormat("es-ES", {
   year: "numeric",
@@ -83,20 +84,37 @@ const MessageBubble = ({ message }: { message: BubbleMessage }) => {
 };
 
 export function ChatMain({ roomId }: { roomId: string }) {
-  const [messages, setMessages] = useState<BubbleMessage[]>([]);
-  const [loadingMessages, setLoadingMessages] = useState(true);
-
-  const [roomName, setRoomName] = useState("");
-  const [loadingRoomName, setLoadingRoomName] = useState(true);
-
   const [content, setContent] = useState("");
-
   const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
   const userId = useUserStore((state) => state.id);
   const socketRef = useRef<ReturnType<typeof connectChatWS> | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: messages = [], isLoading: loadingMessages } = useQuery({
+    queryKey: ["room-messages", roomId],
+    queryFn: async () => {
+      const res = await apiClient.api.rooms[":roomId"].messages.$get({
+        param: { roomId },
+      });
+      if (!res.ok) throw new Error("Failed to fetch messages");
+      return (await res.json()) as BubbleMessage[];
+    },
+  });
+
+  const { data: room, isLoading: loadingRoomName } = useQuery({
+    queryKey: ["room", roomId],
+    queryFn: async () => {
+      const res = await apiClient.api.rooms[":roomId"].$get({
+        param: { roomId },
+      });
+      if (!res.ok) throw new Error("Failed to fetch room");
+      return (await res.json()) as RoomDTO;
+    },
+  });
+  const roomName = room?.name || "";
 
   const updateScrollButtonVisibility = useCallback(() => {
     const el = messagesContainerRef.current;
@@ -131,30 +149,18 @@ export function ChatMain({ roomId }: { roomId: string }) {
   };
 
   useEffect(() => {
-    // cargar historial inicial desde HTTP
-    apiClient.api.rooms[":roomId"].messages
-      .$get({ param: { roomId } })
-      .then(async (res) => {
-        if (!res.ok) return;
-        const data = (await res.json()) as BubbleMessage[];
-        setMessages(data);
-        setLoadingMessages(false);
-      });
-
-    // cargar nombre de la sala desde HTTP
-    apiClient.api.rooms[":roomId"]
-      .$get({ param: { roomId } })
-      .then(async (res) => {
-        if (!res.ok) return;
-        const data = (await res.json()) as RoomDTO;
-        setRoomName(data.name ?? "");
-        setLoadingRoomName(false);
-      });
-
     // actualizar mensajes por evento del WS del servidor
     const connection = connectChatWS((ev) => {
       if (ev.type === "message-created") {
-        setMessages((prev) => [...prev, ev.message]);
+        queryClient.setQueryData(
+          ["room-messages", roomId],
+          (old: BubbleMessage[] | undefined) => {
+            if (!old) return [ev.message];
+            // Evitar duplicados si el evento llega antes que el refetch (optimistic updates si hubieran)
+            if (old.some((m) => m.id === ev.message.id)) return old;
+            return [...old, ev.message];
+          },
+        );
       }
     });
     socketRef.current = connection;
@@ -175,8 +181,7 @@ export function ChatMain({ roomId }: { roomId: string }) {
       connection.send(leaveEvent);
       connection.close();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [roomId, queryClient]); // Re-subscribe if roomId changes
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -186,7 +191,7 @@ export function ChatMain({ roomId }: { roomId: string }) {
     const el = messagesContainerRef.current;
     if (!el) return;
 
-    updateScrollButtonVisibility();
+    requestAnimationFrame(updateScrollButtonVisibility);
     el.addEventListener("scroll", updateScrollButtonVisibility);
 
     return () => {
