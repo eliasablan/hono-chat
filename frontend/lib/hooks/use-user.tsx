@@ -1,10 +1,11 @@
+import { UserDTO } from "@backend/contracts/users";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 interface UserStore {
   id: string | null;
   name: string;
-  setUser: (id: string, name: string) => void;
+  setUser: (user: UserDTO) => void;
   hasUser: () => boolean;
   clear: () => void;
 }
@@ -14,8 +15,8 @@ export const useUserStore = create(
     (set, get) => ({
       id: null,
       name: "",
-      setUser: (id, name) => {
-        set({ id, name });
+      setUser: (user) => {
+        set(user);
       },
       hasUser: () => {
         return !!get().id && !!get().name;
@@ -27,6 +28,6 @@ export const useUserStore = create(
     {
       name: "chat-storage",
       storage: createJSONStorage(() => localStorage),
-    }
-  )
+    },
+  ),
 );
