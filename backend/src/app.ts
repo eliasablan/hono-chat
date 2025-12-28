@@ -8,7 +8,7 @@ import type { ServerWebSocket } from "bun";
 import { db } from "@backend/db/client";
 import z from "zod";
 import { messages, rooms, users } from "@backend/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { createUserInput, userDTO } from "@backend/contracts/users";
 import { createRoomInput, roomDTO } from "@backend/contracts/rooms";
 import {
@@ -18,8 +18,27 @@ import {
 
 // --- typesafe HTTP API ---
 const app = new Hono();
+
+// 1. Configuración básica
 app.use("/*", cors({ origin: "*" }));
 app.use(logger());
+
+// 2. Middleware de Validación de Base de Datos
+app.use("/api/*", async (c, next) => {
+  try {
+    // Ejecutamos una consulta ultra rápida para verificar la conexión
+    await db.execute(sql`SELECT 1`);
+    await next();
+  } catch (error) {
+    console.error("Database Connection Error:", error);
+
+    // Retornamos un error 503 (Service Unavailable) o 500
+    return c.json({
+      error: "Database is not responding",
+      message: "No se puede establecer conexión con la base de datos en este momento."
+    }, 503);
+  }
+})
 
 const roomsApp = new Hono()
   .get("/", async (c) => {
@@ -59,7 +78,7 @@ const roomsApp = new Hono()
         console.error("Error retrieving room:", error);
         return c.text("Internal Server Error", 500);
       }
-    }
+    },
   )
   .delete(
     "/:roomId",
@@ -80,7 +99,7 @@ const roomsApp = new Hono()
         console.error("Error deleting room:", error);
         return c.text("Internal Server Error", 500);
       }
-    }
+    },
   )
   .get(
     "/:roomId/messages",
@@ -103,7 +122,7 @@ const roomsApp = new Hono()
         .orderBy(messages.createdAt);
 
       return c.json(result);
-    }
+    },
   );
 
 const usersApp = new Hono().post(
@@ -122,7 +141,7 @@ const usersApp = new Hono().post(
       console.error("Error creating user:", error);
       return c.text("Internal Server Error", 500);
     }
-  }
+  },
 );
 
 const api = app
@@ -271,9 +290,9 @@ app.get(
                     type: "error",
                     code: "message-create-failed",
                     roomId,
-                  })
+                  }),
                 );
-              } catch {}
+              } catch { }
             }
           }
         } catch (error) {
@@ -293,7 +312,7 @@ app.get(
         currentRoom = null;
       },
     };
-  })
+  }),
 );
 
 export type AppType = typeof api;
