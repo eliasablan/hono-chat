@@ -11,6 +11,18 @@ export const messageDTO = z.object({
 
 export type MessageDTO = z.infer<typeof messageDTO>;
 
+export const messageWithAuthorDTO = messageDTO.extend({
+  authorName: z.string(),
+});
+
+export type MessageWithAuthorDTO = z.infer<typeof messageWithAuthorDTO>;
+
+export const listRoomMessagesResponse = z.array(messageWithAuthorDTO);
+
+export type ListRoomMessagesResponse = z.infer<
+  typeof listRoomMessagesResponse
+>;
+
 // Input para crear mensaje
 export const createMessageInput = z.object({
   roomId: z.uuid(),

@@ -16,3 +16,7 @@ export const createUserInput = z.object({
 });
 
 export type CreateUserInput = z.infer<typeof createUserInput>;
+
+export const createUserResponse = userDTO;
+
+export type CreateUserResponse = z.infer<typeof createUserResponse>;

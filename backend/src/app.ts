@@ -9,8 +9,15 @@ import { db } from "@backend/db/client";
 import z from "zod";
 import { messages, rooms, users } from "@backend/db/schema";
 import { eq, sql } from "drizzle-orm";
-import { createUserInput, userDTO } from "@backend/contracts/users";
-import { createRoomInput, roomDTO } from "@backend/contracts/rooms";
+import { createUserInput, createUserResponse } from "@backend/contracts/users";
+import {
+  createRoomInput,
+  createRoomResponse,
+  deleteRoomResponse,
+  getRoomResponse,
+  listRoomsResponse,
+} from "@backend/contracts/rooms";
+import { listRoomMessagesResponse } from "@backend/contracts/chat";
 import {
   clientToServerEvent,
   serverToClientEvent,
@@ -42,8 +49,12 @@ app.use("/api/*", async (c, next) => {
 
 const roomsApp = new Hono()
   .get("/", async (c) => {
-    const rows = await db.select().from(rooms).orderBy(rooms.name);
-    return c.json(rows);
+    const rows = await db.query.rooms.findMany({
+      with: {
+        messages: true,
+      },
+    });
+    return c.json(listRoomsResponse.parse(rows));
   })
   .post("/", zValidator("json", createRoomInput), async (c) => {
     const { name } = c.req.valid("json");
@@ -52,7 +63,7 @@ const roomsApp = new Hono()
       const [createdRoom] = await db.insert(rooms).values({ name }).returning();
       if (!createdRoom) return c.text("Failed to create room", 500);
 
-      const dto = roomDTO.parse(createdRoom);
+      const dto = createRoomResponse.parse(createdRoom);
       return c.json(dto, 201);
     } catch (error) {
       console.error("Error creating room:", error);
@@ -73,7 +84,7 @@ const roomsApp = new Hono()
           .limit(1);
 
         if (!createdRoom) return c.text("Room not found", 404);
-        return c.json(roomDTO.parse(createdRoom));
+        return c.json(getRoomResponse.parse(createdRoom));
       } catch (error) {
         console.error("Error retrieving room:", error);
         return c.text("Internal Server Error", 500);
@@ -94,7 +105,7 @@ const roomsApp = new Hono()
           .returning();
 
         if (!deletedRoom) return c.text("Room not found", 404);
-        return c.json(roomDTO.parse(deletedRoom));
+        return c.json(deleteRoomResponse.parse(deletedRoom));
       } catch (error) {
         console.error("Error deleting room:", error);
         return c.text("Internal Server Error", 500);
@@ -121,7 +132,7 @@ const roomsApp = new Hono()
         .where(eq(messages.roomId, roomId))
         .orderBy(messages.createdAt);
 
-      return c.json(result);
+      return c.json(listRoomMessagesResponse.parse(result));
     },
   );
 
@@ -135,7 +146,7 @@ const usersApp = new Hono().post(
       const [newUser] = await db.insert(users).values({ name }).returning();
       if (!newUser) return c.text("Failed to create user", 500);
 
-      const dto = userDTO.parse({ id: newUser.id, name: newUser.name });
+      const dto = createUserResponse.parse(newUser);
       return c.json(dto, 201);
     } catch (error) {
       console.error("Error creating user:", error);

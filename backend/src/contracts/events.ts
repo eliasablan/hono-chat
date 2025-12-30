@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { messageDTO } from "./chat";
+import { messageWithAuthorDTO } from "./chat";
 
 // Incoming Event from Client Websocket
 export const clientToServerEvent = z.discriminatedUnion("type", [
@@ -25,9 +25,7 @@ export type ClientToServerEvent = z.infer<typeof clientToServerEvent>;
 export const serverToClientEvent = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("message-created"),
-    message: messageDTO.extend({
-      authorName: z.string(),
-    }),
+    message: messageWithAuthorDTO,
   }),
   z.object({
     type: z.literal("room-joined"),

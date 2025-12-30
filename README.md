@@ -103,7 +103,7 @@ Validación:
 
 - Body JSON con `zValidator("json", ...)` para crear salas/usuarios.
 - Params con `zValidator("param", z.object({ roomId: z.uuid() }))`.
-- Respuestas clave se normalizan con DTOs Zod (`roomDTO`, `userDTO`).
+- Respuestas se validan con contratos Zod por endpoint (inputs y outputs).
 
 ### CORS
 
@@ -195,7 +195,8 @@ El frontend importa tipos y contratos directamente desde el código del backend 
 }
 ```
 
-Así se comparten DTOs (`RoomDTO`, `UserDTO`, `MessageDTO`) y también los eventos de WS (`ClientToServerEvent`, `ServerToClientEvent`).
+Se comparten contratos por endpoint (inputs/outputs) y eventos de WS
+(`ClientToServerEvent`, `ServerToClientEvent`).
 
 ### WebSocket (reconexión + “sticky join”)
 
