@@ -1,7 +1,14 @@
 "use client";
 
-import type { RoomDTO } from "@backend/contracts/rooms";
-import { PlusIcon, Search, UserIcon, XIcon, Loader } from "lucide-react";
+import {
+  PlusIcon,
+  Loader,
+  Trash2Icon,
+  SearchIcon,
+  MessageSquareTextIcon,
+  UsersIcon,
+  XIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
@@ -26,6 +33,14 @@ import { apiClient } from "@/lib/api-client";
 import { useUserStore } from "@/lib/hooks/use-user";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { Badge } from "./ui/badge";
+import type {
+  CreateRoomResponse,
+  DeleteRoomResponse,
+  ListRoomsResponse,
+} from "@backend/contracts/rooms";
+
+type RoomItem = ListRoomsResponse[number];
 
 export default function Chats() {
   const [searchInput, setSearchInput] = useState("");
@@ -37,7 +52,7 @@ export default function Chats() {
     data: rooms = [],
     isLoading: loadingRooms,
     error: roomsError,
-  } = useQuery({
+  } = useQuery<ListRoomsResponse>({
     queryKey: ["rooms"],
     queryFn: async () => {
       const res = await apiClient.api.rooms.$get();
@@ -45,12 +60,16 @@ export default function Chats() {
         console.error(await res.json());
         throw new Error("No se pueden recuperar las salas en este momento.");
       }
-      return (await res.json()) as RoomDTO[];
+      return (await res.json()) as ListRoomsResponse;
     },
     retry: false,
   });
 
-  const { mutate: deleteRoom, isPending: isPendingDeleteRoom } = useMutation({
+  const { mutate: deleteRoom, isPending: isPendingDeleteRoom } = useMutation<
+    DeleteRoomResponse,
+    Error,
+    string
+  >({
     mutationFn: async (roomId: string) => {
       const res = await apiClient.api.rooms[":roomId"].$delete({
         param: { roomId },
@@ -58,7 +77,7 @@ export default function Chats() {
       if (!res.ok) {
         throw new Error("Failed to delete room");
       }
-      return (await res.json()) as RoomDTO;
+      return (await res.json()) as DeleteRoomResponse;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
@@ -73,7 +92,7 @@ export default function Chats() {
     deleteRoom(roomId);
   };
 
-  const filteredRooms: RoomDTO[] = useMemo(() => {
+  const filteredRooms: RoomItem[] = useMemo(() => {
     if (!searchInput) {
       return rooms;
     }
@@ -84,33 +103,31 @@ export default function Chats() {
   }, [rooms, searchInput]);
 
   return (
-    <Card className="bg-popover relative mx-auto h-full max-w-md flex-1 gap-0 overflow-hidden py-0">
-      <CardHeader className="bg-muted flex h-17 items-center justify-between border-b p-4!">
-        <CardTitle>Salas de Chat</CardTitle>
-        <div className="text-accent inline-flex items-center gap-2 italic">
-          <UserIcon className="size-4" />
-          <span className="leading-none">{userName}</span>
-        </div>
+    <Card className="bg-popover inset-shadow-lg relative mx-auto h-full max-w-md flex-1 gap-0 overflow-hidden py-0 shadow-none">
+      <CardHeader className="bg-muted flex h-17 items-center justify-between border-b pt-6 shadow">
+        <CardTitle>Hola, {userName} 👋</CardTitle>
       </CardHeader>
 
-      <CardContent className="flex-1 space-y-4 overflow-y-auto p-4!">
-        {loadingRooms ? (
-          <p className="text-sm italic">Cargando...</p>
-        ) : roomsError ? (
-          <p className="text-sm italic">Error recuperando las salas.</p>
-        ) : filteredRooms.length === 0 ? (
-          <p className="mx-auto text-sm italic">No existen salas.</p>
-        ) : (
-          <>
+      <CardContent className="flex-1 space-y-6 overflow-y-auto py-6">
+        {loadingRooms ||
+          (!roomsError && (
             <div className="flex items-center justify-between gap-4">
-              <InputGroup className="bg-muted">
+              <InputGroup className="border-border rounded-full px-1 py-5 shadow-none">
                 <InputGroupInput
+                  className="placeholder:text-muted-foreground"
                   placeholder="Buscar..."
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                 />
                 <InputGroupAddon>
-                  <Search />
+                  {searchInput.length > 0 ? (
+                    <XIcon
+                      className="text-destructive cursor-pointer"
+                      onClick={() => setSearchInput("")}
+                    />
+                  ) : (
+                    <SearchIcon />
+                  )}
                 </InputGroupAddon>
                 <InputGroupAddon align="inline-end">
                   {filteredRooms.length} resultado
@@ -118,28 +135,53 @@ export default function Chats() {
                 </InputGroupAddon>
               </InputGroup>
             </div>
-            <ul>
-              {filteredRooms.map((room) => (
-                <Link
-                  href={`/${room.id}`}
-                  className="hover:bg-accent hover:text-accent-foreground group flex items-center justify-between gap-2"
-                  key={room.id}
+          ))}
+
+        {loadingRooms ? (
+          <p className="text-sm italic">Cargando...</p>
+        ) : roomsError ? (
+          <p className="text-sm italic">Error recuperando las salas.</p>
+        ) : filteredRooms.length === 0 ? (
+          <p className="mx-auto text-sm italic">No existen salas.</p>
+        ) : (
+          <ul className="space-y-4">
+            {filteredRooms.map((room) => (
+              <Link
+                href={`/${room.id}`}
+                className="hover:bg-muted/70 bg-muted text-muted-foreground group border-muted-froreground/70 flex items-center justify-between gap-2 rounded-xl border p-4 shadow-lg"
+                key={room.id}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="bg-accent text-accent-foreground flex size-10 items-center justify-center rounded-full text-sm uppercase">
+                    {room.name.slice(0, 3)}
+                  </div>
+                  <div className="flex flex-col items-start justify-between gap-1">
+                    <span className="px-2">{room.name}</span>
+                    <div className="flex gap-1">
+                      <Badge variant="outline">
+                        9
+                        <UsersIcon className="size-5" />
+                      </Badge>
+                      <Badge variant="secondary">
+                        {room.messages.length}
+                        <MessageSquareTextIcon className="size-5" />
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  size="icon"
+                  className="text-destructive hover:text-accent cursor-pointer delay-100"
+                  title="Borrar sala"
+                  variant="link"
+                  onClick={(e) => handleDelete(e, room.id)}
+                  disabled={isPendingDeleteRoom}
                 >
-                  <span className="px-2 text-sm">{room.name}</span>
-                  <Button
-                    size="icon-sm"
-                    className="cursor-pointer"
-                    title="Borrar chat"
-                    variant="link"
-                    onClick={(e) => handleDelete(e, room.id)}
-                    disabled={isPendingDeleteRoom}
-                  >
-                    <XIcon className="text-destructive group-hover:text-primary-foreground" />
-                  </Button>
-                </Link>
-              ))}
-            </ul>
-          </>
+                  <Trash2Icon className="size-5" />
+                </Button>
+              </Link>
+            ))}
+          </ul>
         )}
       </CardContent>
       <CreateRoom />
@@ -153,13 +195,17 @@ function CreateRoom() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { mutate, isPending, reset, isError, error } = useMutation({
+  const { mutate, isPending, reset, isError, error } = useMutation<
+    CreateRoomResponse,
+    Error,
+    string
+  >({
     mutationFn: async (name: string) => {
       const res = await apiClient.api.rooms.$post({ json: { name } });
       if (!res.ok) {
         throw new Error("No se pueden crear salas en este momento.");
       }
-      return (await res.json()) as RoomDTO;
+      return (await res.json()) as CreateRoomResponse;
     },
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
@@ -188,7 +234,7 @@ function CreateRoom() {
     <ResponsiveModal open={modalOpen} onOpenChange={handleOpenChange}>
       <ResponsiveModalTrigger asChild>
         <Button
-          className="absolute right-4 bottom-4 cursor-pointer rounded-full"
+          className="absolute right-6 bottom-6 scale-150 cursor-pointer rounded-full shadow-xl"
           size="icon-lg"
         >
           <PlusIcon />

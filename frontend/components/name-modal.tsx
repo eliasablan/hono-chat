@@ -1,6 +1,6 @@
 "use client";
 
-import type { UserDTO } from "@backend/contracts/users";
+import type { CreateUserResponse } from "@backend/contracts/users";
 import { Loader } from "lucide-react";
 import { useState } from "react";
 import { apiClient } from "@/lib/api-client";
@@ -32,7 +32,7 @@ export default function NameModal() {
         throw new Error("No se pueden crear usuarios en este momento.");
       }
 
-      return (await res.json()) as UserDTO;
+      return (await res.json()) as CreateUserResponse;
     },
     onSuccess: (created) => {
       storeUser(created);

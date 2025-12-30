@@ -9,8 +9,8 @@ import { connectChatWS } from "@/lib/ws";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/lib/hooks/use-user";
 import type { ClientToServerEvent } from "@backend/contracts/events";
-import { type MessageDTO } from "@backend/contracts/chat";
-import type { RoomDTO } from "@backend/contracts/rooms";
+import type { ListRoomMessagesResponse } from "@backend/contracts/chat";
+import type { GetRoomResponse } from "@backend/contracts/rooms";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -41,9 +41,7 @@ const formatter = new Intl.DateTimeFormat("es-ES", {
   hour12: true,
 });
 
-interface BubbleMessage extends MessageDTO {
-  authorName: string;
-}
+type BubbleMessage = ListRoomMessagesResponse[number];
 
 const MessageBubble = ({ message }: { message: BubbleMessage }) => {
   const isUserMessage = useUserStore((state) => state.id) === message.authorId;
@@ -57,21 +55,24 @@ const MessageBubble = ({ message }: { message: BubbleMessage }) => {
     >
       <Tooltip>
         <TooltipTrigger>
-          <Avatar className="h-8 w-8">
+          <Avatar className="h-8 w-8 shadow-lg">
             <AvatarImage src="/placeholder.svg" alt="User Avatar" />
             <AvatarFallback className="capitalize">
               {message.authorName[0]}
             </AvatarFallback>
           </Avatar>
         </TooltipTrigger>
-        <TooltipContent side={isUserMessage ? "left" : "right"}>
+        <TooltipContent
+          className="shadow-lg"
+          side={isUserMessage ? "left" : "right"}
+        >
           <p>{message.authorName}</p>
           <p>{formatter.format(new Date(message.createdAt))}</p>
         </TooltipContent>
       </Tooltip>
       <div
         className={cn(
-          "max-w-[70%] rounded-lg p-3",
+          "max-w-[70%] rounded-lg p-3 shadow-lg",
           isUserMessage
             ? "bg-primary text-primary-foreground rounded-br-none"
             : "bg-muted-foreground text-muted rounded-bl-none",
@@ -83,7 +84,7 @@ const MessageBubble = ({ message }: { message: BubbleMessage }) => {
   );
 };
 
-export function ChatMain({ roomId }: { roomId: string }) {
+export function Chat({ roomId }: { roomId: string }) {
   const [content, setContent] = useState("");
   const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -93,25 +94,26 @@ export function ChatMain({ roomId }: { roomId: string }) {
   const socketRef = useRef<ReturnType<typeof connectChatWS> | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: messages = [], isLoading: loadingMessages } = useQuery({
-    queryKey: ["room-messages", roomId],
-    queryFn: async () => {
-      const res = await apiClient.api.rooms[":roomId"].messages.$get({
-        param: { roomId },
-      });
-      if (!res.ok) throw new Error("Failed to fetch messages");
-      return (await res.json()) as BubbleMessage[];
-    },
-  });
+  const { data: messages = [], isLoading: loadingMessages } =
+    useQuery<ListRoomMessagesResponse>({
+      queryKey: ["room-messages", roomId],
+      queryFn: async () => {
+        const res = await apiClient.api.rooms[":roomId"].messages.$get({
+          param: { roomId },
+        });
+        if (!res.ok) throw new Error("Failed to fetch messages");
+        return (await res.json()) as ListRoomMessagesResponse;
+      },
+    });
 
-  const { data: room, isLoading: loadingRoomName } = useQuery({
+  const { data: room, isLoading: loadingRoomName } = useQuery<GetRoomResponse>({
     queryKey: ["room", roomId],
     queryFn: async () => {
       const res = await apiClient.api.rooms[":roomId"].$get({
         param: { roomId },
       });
       if (!res.ok) throw new Error("Failed to fetch room");
-      return (await res.json()) as RoomDTO;
+      return (await res.json()) as GetRoomResponse;
     },
   });
   const roomName = room?.name || "";
@@ -204,8 +206,8 @@ export function ChatMain({ roomId }: { roomId: string }) {
   }, [messages.length, updateScrollButtonVisibility]);
 
   return (
-    <Card className="bg-popover relative mx-auto h-full max-w-md flex-1 gap-0 overflow-hidden py-0">
-      <CardHeader className="bg-muted flex h-17 items-center justify-between border-b p-4!">
+    <Card className="bg-popover inset-shadow-lg relative mx-auto h-full max-w-md flex-1 gap-0 overflow-hidden py-0 shadow-none">
+      <CardHeader className="bg-muted flex h-17 items-center justify-between border-b p-6 shadow">
         <Button size="icon-sm" variant="ghost" asChild>
           <Link href="/">
             <ArrowLeft className="size-4" />
@@ -215,7 +217,7 @@ export function ChatMain({ roomId }: { roomId: string }) {
       </CardHeader>
 
       <CardContent
-        className="flex-1 space-y-4 overflow-y-auto p-4!"
+        className="flex-1 space-y-4 overflow-y-auto p-6"
         ref={messagesContainerRef}
       >
         {(!messages || messages.length === 0) &&
@@ -247,23 +249,21 @@ export function ChatMain({ roomId }: { roomId: string }) {
         </Button>
       )}
 
-      <CardFooter className="bg-muted border-t p-4!">
-        <form
-          onSubmit={handleSend}
-          className="bg-muted flex w-full items-center gap-3"
-        >
-          <InputGroup className="bg-popover border-border border">
+      <CardFooter className="bg-transparent p-6">
+        <form onSubmit={handleSend} className="flex w-full items-center gap-3">
+          <InputGroup className="border-border border shadow-none">
             <TextareaAutosize
               value={content}
               onChange={(e) => setContent(e.target.value)}
               data-slot="input-group-control"
-              className="flex field-sizing-content max-h-32 min-h-16 w-full resize-none rounded-md px-3 py-2.5 text-base outline-none md:text-sm"
+              className="flex field-sizing-content max-h-32 min-h-16 w-full resize-none rounded-md px-3 py-2.5 outline-none md:text-sm"
               placeholder="Escribe tu mensaje aquí..."
             />
             <InputGroupAddon align="block-end">
               <InputGroupButton
+                disabled={content.trim().length === 0}
                 type="submit"
-                className="ml-auto"
+                className="ml-auto shadow-lg"
                 variant="default"
                 size="sm"
               >
