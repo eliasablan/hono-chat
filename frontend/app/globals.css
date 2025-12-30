@@ -39,7 +39,7 @@
   --font-sans: Montserrat, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Fira Code, monospace;
-  --radius: 0.35rem;
+  --radius: 1rem;
   --shadow-x: 0px;
   --shadow-y: 4px;
   --shadow-blur: 6px;
@@ -48,15 +48,20 @@
   --shadow-color: hsl(240 30% 25%);
   --shadow-2xs: 0px 4px 6px 0px hsl(240 30% 25% / 0.06);
   --shadow-xs: 0px 4px 6px 0px hsl(240 30% 25% / 0.06);
-  --shadow-sm: 0px 4px 6px 0px hsl(240 30% 25% / 0.12),
+  --shadow-sm:
+    0px 4px 6px 0px hsl(240 30% 25% / 0.12),
     0px 1px 2px -1px hsl(240 30% 25% / 0.12);
-  --shadow: 0px 4px 6px 0px hsl(240 30% 25% / 0.12),
+  --shadow:
+    0px 4px 6px 0px hsl(240 30% 25% / 0.12),
     0px 1px 2px -1px hsl(240 30% 25% / 0.12);
-  --shadow-md: 0px 4px 6px 0px hsl(240 30% 25% / 0.12),
+  --shadow-md:
+    0px 4px 6px 0px hsl(240 30% 25% / 0.12),
     0px 2px 4px -1px hsl(240 30% 25% / 0.12);
-  --shadow-lg: 0px 4px 6px 0px hsl(240 30% 25% / 0.12),
+  --shadow-lg:
+    0px 4px 6px 0px hsl(240 30% 25% / 0.12),
     0px 4px 6px -1px hsl(240 30% 25% / 0.12);
-  --shadow-xl: 0px 4px 6px 0px hsl(240 30% 25% / 0.12),
+  --shadow-xl:
+    0px 4px 6px 0px hsl(240 30% 25% / 0.12),
     0px 8px 10px -1px hsl(240 30% 25% / 0.12);
   --shadow-2xl: 0px 4px 6px 0px hsl(240 30% 25% / 0.3);
   --tracking-normal: 0em;
@@ -108,15 +113,20 @@
   --shadow-color: hsl(240 30% 25%);
   --shadow-2xs: 0px 4px 6px 0px hsl(240 30% 25% / 0.06);
   --shadow-xs: 0px 4px 6px 0px hsl(240 30% 25% / 0.06);
-  --shadow-sm: 0px 4px 6px 0px hsl(240 30% 25% / 0.12),
+  --shadow-sm:
+    0px 4px 6px 0px hsl(240 30% 25% / 0.12),
     0px 1px 2px -1px hsl(240 30% 25% / 0.12);
-  --shadow: 0px 4px 6px 0px hsl(240 30% 25% / 0.12),
+  --shadow:
+    0px 4px 6px 0px hsl(240 30% 25% / 0.12),
     0px 1px 2px -1px hsl(240 30% 25% / 0.12);
-  --shadow-md: 0px 4px 6px 0px hsl(240 30% 25% / 0.12),
+  --shadow-md:
+    0px 4px 6px 0px hsl(240 30% 25% / 0.12),
     0px 2px 4px -1px hsl(240 30% 25% / 0.12);
-  --shadow-lg: 0px 4px 6px 0px hsl(240 30% 25% / 0.12),
+  --shadow-lg:
+    0px 4px 6px 0px hsl(240 30% 25% / 0.12),
     0px 4px 6px -1px hsl(240 30% 25% / 0.12);
-  --shadow-xl: 0px 4px 6px 0px hsl(240 30% 25% / 0.12),
+  --shadow-xl:
+    0px 4px 6px 0px hsl(240 30% 25% / 0.12),
     0px 8px 10px -1px hsl(240 30% 25% / 0.12);
   --shadow-2xl: 0px 4px 6px 0px hsl(240 30% 25% / 0.3);
 }
@@ -180,5 +190,43 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+*::-webkit-scrollbar-track {
+  margin: 24px;
+  background-color: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-muted);
+  border-radius: 10px;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Adjust scrollbar width for smaller screens */
+@media screen and (max-width: 768px) {
+  *::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+  }
+}
+
+/* Adjust scrollbar width for medium screens */
+@media screen and (min-width: 768px) and (max-width: 1280px) {
+  *::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+}
+
+/* Adjust scrollbar width for large screens */
+@media screen and (min-width: 1280px) {
+  *::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
   }
 }
