@@ -41,6 +41,8 @@ import type {
 } from "@backend/contracts/rooms";
 import { Item, ItemGroup } from "@/components/ui/item";
 import { ThemeButton } from "./theme-button";
+import { roomsOptions } from "@/query-options/rooms";
+import { Skeleton } from "./ui/skeleton";
 
 type RoomItem = ListRoomsResponse[number];
 
@@ -55,19 +57,7 @@ export default function Chats() {
     data: rooms = [],
     isLoading: loadingRooms,
     error: roomsError,
-  } = useQuery<ListRoomsResponse>({
-    queryKey: ["rooms"],
-    queryFn: async () => {
-      const res = await apiClient.api.rooms.$get();
-      if (!res.ok) {
-        console.error(await res.json());
-        throw new Error("No se pueden recuperar las salas en este momento.");
-      }
-      return (await res.json()) as ListRoomsResponse;
-    },
-    refetchInterval: 10000,
-    retry: false,
-  });
+  } = useQuery(roomsOptions());
 
   const { mutate: deleteRoom, isPending: isPendingDeleteRoom } = useMutation<
     DeleteRoomResponse,
@@ -114,36 +104,40 @@ export default function Chats() {
       </CardHeader>
 
       <CardContent className="flex-1 space-y-6 overflow-y-auto py-6">
-        {loadingRooms ||
-          (!roomsError && (
-            <div className="flex items-center justify-between gap-4">
-              <InputGroup className="border-border rounded-full px-1 py-5 shadow-none dark:bg-transparent">
-                <InputGroupInput
-                  className="placeholder:text-muted-foreground"
-                  placeholder="Buscar..."
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                />
-                <InputGroupAddon>
-                  {searchInput.length > 0 ? (
-                    <XIcon
-                      className="text-destructive cursor-pointer"
-                      onClick={() => setSearchInput("")}
-                    />
-                  ) : (
-                    <SearchIcon />
-                  )}
-                </InputGroupAddon>
-                <InputGroupAddon align="inline-end">
-                  {filteredRooms.length} resultado
-                  {filteredRooms.length !== 1 && "s"}
-                </InputGroupAddon>
-              </InputGroup>
-            </div>
-          ))}
+        {!roomsError && (
+          <div className="flex items-center justify-between gap-4">
+            <InputGroup className="border-border rounded-full px-1 py-5 shadow-none dark:bg-transparent">
+              <InputGroupInput
+                disabled={loadingRooms}
+                className="placeholder:text-muted-foreground"
+                placeholder="Buscar..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              <InputGroupAddon>
+                {searchInput.length > 0 ? (
+                  <XIcon
+                    className="text-destructive cursor-pointer"
+                    onClick={() => setSearchInput("")}
+                  />
+                ) : (
+                  <SearchIcon />
+                )}
+              </InputGroupAddon>
+              <InputGroupAddon align="inline-end">
+                {filteredRooms.length} resultado
+                {filteredRooms.length !== 1 && "s"}
+              </InputGroupAddon>
+            </InputGroup>
+          </div>
+        )}
 
         {loadingRooms ? (
-          <p className="text-sm italic">Cargando...</p>
+          <div className="space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <RoomSkeleton key={i} />
+            ))}
+          </div>
         ) : roomsError ? (
           <p className="text-sm italic">Error recuperando las salas.</p>
         ) : filteredRooms.length === 0 ? (
@@ -297,5 +291,20 @@ function CreateRoom() {
         </form>
       </ResponsiveModalContent>
     </ResponsiveModal>
+  );
+}
+
+function RoomSkeleton() {
+  return (
+    <div className="bg-muted flex items-center justify-between gap-4 rounded-xl border p-4 shadow-lg">
+      <Skeleton className="h-12 w-12 rounded-full" />
+      <div className="flex flex-1 flex-col items-start justify-between gap-2">
+        <Skeleton className="h-4 w-32" />
+        <div className="flex gap-1">
+          <Skeleton className="h-5 w-12 rounded-full" />
+          <Skeleton className="h-5 w-12 rounded-full" />
+        </div>
+      </div>
+    </div>
   );
 }

@@ -18,12 +18,21 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Card,
   CardHeader,
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
+
+const MessageSkeleton = ({ className }: { className?: string }) => (
+  <div className={cn(className, "flex items-end gap-3")}>
+    <Skeleton className="h-8 w-8 rounded-full" />
+    <Skeleton className="h-10 w-[70%] rounded-lg" />
+  </div>
+);
+
 import {
   InputGroup,
   InputGroupAddon,
@@ -218,7 +227,11 @@ export function Chat({ roomId }: { roomId: string }) {
             <ArrowLeft className="size-4" />
           </Link>
         </Button>
-        <h1 className="leading-none font-semibold">{roomName}</h1>
+        {loadingRoomName ? (
+          <Skeleton className="h-6 w-32" />
+        ) : (
+          <h1 className="leading-none font-semibold">{roomName}</h1>
+        )}
       </CardHeader>
 
       <CardContent
@@ -235,7 +248,14 @@ export function Chat({ roomId }: { roomId: string }) {
             </div>
           )}
         {loadingMessages ? (
-          <p className="text-sm italic">Cargando...</p>
+          <div className="space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <MessageSkeleton
+                className={cn(i % 2 === 0 && "flex-row-reverse")}
+                key={i}
+              />
+            ))}
+          </div>
         ) : (
           messages.map((msg) => <MessageBubble key={msg.id} message={msg} />)
         )}
