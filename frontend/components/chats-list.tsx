@@ -39,6 +39,8 @@ import type {
   DeleteRoomResponse,
   ListRoomsResponse,
 } from "@backend/contracts/rooms";
+import { Item, ItemGroup } from "@/components/ui/item";
+import { ThemeButton } from "./theme-button";
 
 type RoomItem = ListRoomsResponse[number];
 
@@ -62,6 +64,7 @@ export default function Chats() {
       }
       return (await res.json()) as ListRoomsResponse;
     },
+    refetchInterval: 10000,
     retry: false,
   });
 
@@ -106,6 +109,7 @@ export default function Chats() {
     <Card className="bg-popover inset-shadow-lg relative mx-auto h-full max-w-md flex-1 gap-0 overflow-hidden py-0 shadow-none">
       <CardHeader className="bg-muted flex h-17 items-center justify-between border-b pt-6 shadow">
         <CardTitle>Hola, {userName} 👋</CardTitle>
+        <ThemeButton />
       </CardHeader>
 
       <CardContent className="flex-1 space-y-6 overflow-y-auto py-6">
@@ -142,23 +146,27 @@ export default function Chats() {
         ) : roomsError ? (
           <p className="text-sm italic">Error recuperando las salas.</p>
         ) : filteredRooms.length === 0 ? (
-          <p className="mx-auto text-sm italic">No existen salas.</p>
+          <p className="mx-auto text-sm italic">Sin resultados.</p>
         ) : (
-          <ul className="space-y-4">
+          <ItemGroup className="space-y-4">
             {filteredRooms.map((room) => (
-              <Link
-                href={`/${room.id}`}
-                className="hover:bg-muted/70 bg-muted text-muted-foreground group border-muted-froreground/70 flex items-center justify-between gap-2 rounded-xl border p-4 shadow-lg"
+              <Item
+                className="[a]:hover:bg-muted/50 bg-muted flex items-center justify-between gap-4 rounded-xl border p-4 shadow-lg"
+                variant="outline"
                 key={room.id}
+                asChild
               >
-                <div className="flex items-center gap-2">
-                  <div className="bg-accent text-accent-foreground flex size-10 items-center justify-center rounded-full text-sm uppercase">
+                <Link
+                  href={`/${room.id}`}
+                  // className="hover:bg-muted/70 bg-muted text-muted-foreground group border-muted-froreground/70 flex items-center justify-between gap-2 rounded-xl border p-4 shadow-lg"
+                >
+                  <div className="bg-accent text-accent-foreground flex size-12 items-center justify-center rounded-full text-sm uppercase">
                     {room.name.slice(0, 3)}
                   </div>
-                  <div className="flex flex-col items-start justify-between gap-1">
-                    <span className="px-2">{room.name}</span>
+                  <div className="flex flex-1 flex-col items-start justify-between gap-1">
+                    <h4>{room.name}</h4>
                     <div className="flex gap-1">
-                      <Badge variant="outline">
+                      <Badge variant="default">
                         9
                         <UsersIcon className="size-5" />
                       </Badge>
@@ -168,20 +176,20 @@ export default function Chats() {
                       </Badge>
                     </div>
                   </div>
-                </div>
-                <Button
-                  size="icon"
-                  className="text-destructive hover:text-accent cursor-pointer delay-100"
-                  title="Borrar sala"
-                  variant="link"
-                  onClick={(e) => handleDelete(e, room.id)}
-                  disabled={isPendingDeleteRoom}
-                >
-                  <Trash2Icon className="size-5" />
-                </Button>
-              </Link>
+                  <Button
+                    size="icon"
+                    className="text-destructive hover:text-accent cursor-pointer duration-100"
+                    title="Borrar sala"
+                    variant="link"
+                    onClick={(e) => handleDelete(e, room.id)}
+                    disabled={isPendingDeleteRoom}
+                  >
+                    <Trash2Icon className="size-5" />
+                  </Button>
+                </Link>
+              </Item>
             ))}
-          </ul>
+          </ItemGroup>
         )}
       </CardContent>
       <CreateRoom />
