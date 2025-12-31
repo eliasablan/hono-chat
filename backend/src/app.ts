@@ -47,6 +47,50 @@ app.use("/api/*", async (c, next) => {
   }
 })
 
+// --- WebSocket State ---
+type RoomId = string;
+type Socket = ServerWebSocket;
+const roomSockets = new Map<RoomId, Set<Socket>>();
+
+function getOrCreateRoomClients(roomId: RoomId): Set<Socket> {
+  const existing = roomSockets.get(roomId);
+  if (existing) return existing;
+
+  const clients = new Set<Socket>();
+  roomSockets.set(roomId, clients);
+  return clients;
+}
+
+function removeSocketFromAllRooms(socket: Socket) {
+  for (const [roomId, clients] of roomSockets) {
+    if (!clients.delete(socket)) continue;
+    if (clients.size === 0) roomSockets.delete(roomId);
+  }
+}
+
+function broadcastToRoom(roomId: RoomId, payload: unknown) {
+  const clients = roomSockets.get(roomId);
+  if (!clients) return;
+
+  const message = JSON.stringify(payload);
+
+  for (const client of clients) {
+    if (client.readyState !== 1) {
+      clients.delete(client);
+      continue;
+    }
+
+    try {
+      const status = client.send(message);
+      if (status === 0) clients.delete(client);
+    } catch {
+      clients.delete(client);
+    }
+  }
+
+  if (clients.size === 0) roomSockets.delete(roomId);
+}
+
 const roomsApp = new Hono()
   .get("/", async (c) => {
     const rows = await db.query.rooms.findMany({
@@ -54,7 +98,13 @@ const roomsApp = new Hono()
         messages: true,
       },
     });
-    return c.json(listRoomsResponse.parse(rows));
+
+    const result = rows.map((room) => ({
+      ...room,
+      activeConnections: roomSockets.get(room.id)?.size ?? 0,
+    }));
+
+    return c.json(listRoomsResponse.parse(result));
   })
   .post("/", zValidator("json", createRoomInput), async (c) => {
     const { name } = c.req.valid("json");
@@ -159,50 +209,6 @@ const api = app
   .basePath("/api")
   .route("/rooms", roomsApp)
   .route("/users", usersApp);
-
-// --- WebSocket ---
-type RoomId = string;
-type Socket = ServerWebSocket;
-const roomSockets = new Map<RoomId, Set<Socket>>();
-
-function getOrCreateRoomClients(roomId: RoomId): Set<Socket> {
-  const existing = roomSockets.get(roomId);
-  if (existing) return existing;
-
-  const clients = new Set<Socket>();
-  roomSockets.set(roomId, clients);
-  return clients;
-}
-
-function removeSocketFromAllRooms(socket: Socket) {
-  for (const [roomId, clients] of roomSockets) {
-    if (!clients.delete(socket)) continue;
-    if (clients.size === 0) roomSockets.delete(roomId);
-  }
-}
-
-function broadcastToRoom(roomId: RoomId, payload: unknown) {
-  const clients = roomSockets.get(roomId);
-  if (!clients) return;
-
-  const message = JSON.stringify(payload);
-
-  for (const client of clients) {
-    if (client.readyState !== 1) {
-      clients.delete(client);
-      continue;
-    }
-
-    try {
-      const status = client.send(message);
-      if (status === 0) clients.delete(client);
-    } catch {
-      clients.delete(client);
-    }
-  }
-
-  if (clients.size === 0) roomSockets.delete(roomId);
-}
 
 app.get(
   "/ws",

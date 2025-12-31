@@ -167,7 +167,7 @@ export default function Chats() {
                     <h4>{room.name}</h4>
                     <div className="flex gap-1">
                       <Badge variant="default">
-                        9
+                        {room.activeConnections}
                         <UsersIcon className="size-5" />
                       </Badge>
                       <Badge variant="secondary">

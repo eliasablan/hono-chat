@@ -17,7 +17,15 @@ export const roomWithMessagesDTO = roomDTO.extend({
 
 export type RoomWithMessagesDTO = z.infer<typeof roomWithMessagesDTO>;
 
-export const listRoomsResponse = z.array(roomWithMessagesDTO);
+export const roomWithMessagesAndConnectionsDTO = roomWithMessagesDTO.extend({
+  activeConnections: z.number().nonnegative().default(0),
+});
+
+export type RoomWithMessagesAndConnectionsDTO = z.infer<
+  typeof roomWithMessagesAndConnectionsDTO
+>;
+
+export const listRoomsResponse = z.array(roomWithMessagesAndConnectionsDTO);
 
 export type ListRoomsResponse = z.infer<typeof listRoomsResponse>;
 
