@@ -47,6 +47,7 @@ type RoomItem = ListRoomsResponse[number];
 export default function Chats() {
   const [searchInput, setSearchInput] = useState("");
 
+  const userId = useUserStore((state) => state.id);
   const userName = useUserStore((state) => state.name);
   const queryClient = useQueryClient();
 
@@ -106,7 +107,7 @@ export default function Chats() {
   }, [rooms, searchInput]);
 
   return (
-    <Card className="bg-popover inset-shadow-lg relative mx-auto h-full max-w-md flex-1 gap-0 overflow-hidden py-0 shadow-none">
+    <Card className="bg-popover inset-shadow-lg relative mx-auto h-full max-w-md flex-1 gap-0 overflow-hidden rounded-none py-0 shadow-none">
       <CardHeader className="bg-muted flex h-17 items-center justify-between border-b pt-6 shadow">
         <CardTitle>Hola, {userName} 👋</CardTitle>
         <ThemeButton />
@@ -116,7 +117,7 @@ export default function Chats() {
         {loadingRooms ||
           (!roomsError && (
             <div className="flex items-center justify-between gap-4">
-              <InputGroup className="border-border rounded-full px-1 py-5 shadow-none">
+              <InputGroup className="border-border rounded-full px-1 py-5 shadow-none dark:bg-transparent">
                 <InputGroupInput
                   className="placeholder:text-muted-foreground"
                   placeholder="Buscar..."
@@ -176,16 +177,18 @@ export default function Chats() {
                       </Badge>
                     </div>
                   </div>
-                  <Button
-                    size="icon"
-                    className="text-destructive hover:text-accent cursor-pointer duration-100"
-                    title="Borrar sala"
-                    variant="link"
-                    onClick={(e) => handleDelete(e, room.id)}
-                    disabled={isPendingDeleteRoom}
-                  >
-                    <Trash2Icon className="size-5" />
-                  </Button>
+                  {room.createdBy === userId && (
+                    <Button
+                      size="icon"
+                      className="text-destructive hover:text-accent cursor-pointer duration-100"
+                      title="Borrar sala"
+                      variant="link"
+                      onClick={(e) => handleDelete(e, room.id)}
+                      disabled={isPendingDeleteRoom}
+                    >
+                      <Trash2Icon className="size-4.5" />
+                    </Button>
+                  )}
                 </Link>
               </Item>
             ))}
@@ -202,6 +205,7 @@ function CreateRoom() {
   const [modalOpen, setModalOpen] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const userId = useUserStore((state) => state.id);
 
   const { mutate, isPending, reset, isError, error } = useMutation<
     CreateRoomResponse,
@@ -209,7 +213,12 @@ function CreateRoom() {
     string
   >({
     mutationFn: async (name: string) => {
-      const res = await apiClient.api.rooms.$post({ json: { name } });
+      if (!userId) {
+        throw new Error("Falta el usuario, vuelve a iniciar sesión.");
+      }
+      const res = await apiClient.api.rooms.$post({
+        json: { name, createdBy: userId },
+      });
       if (!res.ok) {
         throw new Error("No se pueden crear salas en este momento.");
       }
@@ -267,14 +276,14 @@ function CreateRoom() {
           <Input
             placeholder="Nueva sala"
             value={newRoom}
-            disabled={isPending || isError}
+            disabled={isPending || isError || !userId}
             onChange={(e) => {
               setNewRoom(e.target.value);
             }}
           />
           <Button
             className={cn(isPending && "animate-pulse")}
-            disabled={!newRoom || isPending || isError}
+            disabled={!newRoom || isPending || isError || !userId}
           >
             {isPending ? (
               <>

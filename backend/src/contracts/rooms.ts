@@ -7,6 +7,7 @@ const roomName = z.string().trim().min(1).max(100);
 export const roomDTO = z.object({
   id: z.uuid(),
   name: roomName,
+  createdBy: z.uuid(),
 });
 
 export type RoomDTO = z.infer<typeof roomDTO>;
@@ -36,6 +37,7 @@ export type GetRoomResponse = z.infer<typeof getRoomResponse>;
 // Input para crear sala
 export const createRoomInput = z.object({
   name: roomName,
+  createdBy: z.uuid(),
 });
 
 export type CreateRoomInput = z.infer<typeof createRoomInput>;

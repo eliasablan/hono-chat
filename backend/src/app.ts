@@ -107,10 +107,13 @@ const roomsApp = new Hono()
     return c.json(listRoomsResponse.parse(result));
   })
   .post("/", zValidator("json", createRoomInput), async (c) => {
-    const { name } = c.req.valid("json");
+    const { name, createdBy } = c.req.valid("json");
 
     try {
-      const [createdRoom] = await db.insert(rooms).values({ name }).returning();
+      const [createdRoom] = await db
+        .insert(rooms)
+        .values({ name, createdBy })
+        .returning();
       if (!createdRoom) return c.text("Failed to create room", 500);
 
       const dto = createRoomResponse.parse(createdRoom);

@@ -9,10 +9,14 @@ export const users = pgTable("users", {
 export const rooms = pgTable("rooms", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 100 }).notNull(),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => users.id),
 });
 
-export const roomsRelations = relations(rooms, ({ many }) => ({
+export const roomsRelations = relations(rooms, ({ many, one }) => ({
   messages: many(messages),
+  creator: one(users, { fields: [rooms.createdBy], references: [users.id] }),
 }));
 
 export const messages = pgTable("messages", {

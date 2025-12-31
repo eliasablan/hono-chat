@@ -20,7 +20,12 @@ export function ThemeButton() {
   };
 
   return (
-    <Button onClick={handleClick} variant="link" size="icon">
+    <Button
+      onClick={handleClick}
+      variant="outline"
+      className="dark:hover:bg-accent-foreground dark:hover:text-accent cursor-pointer bg-transparent"
+      size="icon"
+    >
       {/* Icono de Sol: Visible en light, oculto en dark */}
       <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
 

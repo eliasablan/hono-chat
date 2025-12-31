@@ -206,9 +206,14 @@ export function Chat({ roomId }: { roomId: string }) {
   }, [messages.length, updateScrollButtonVisibility]);
 
   return (
-    <Card className="bg-popover inset-shadow-lg relative mx-auto h-full max-w-md flex-1 gap-0 overflow-hidden py-0 shadow-none">
+    <Card className="bg-popover inset-shadow-lg relative mx-auto h-full max-w-md flex-1 gap-0 overflow-hidden rounded-none py-0 shadow-none">
       <CardHeader className="bg-muted flex h-17 items-center justify-between border-b p-6 shadow">
-        <Button size="icon-sm" variant="ghost" asChild>
+        <Button
+          size="icon-sm"
+          variant="outline"
+          className="dark:hover:bg-accent-foreground dark:hover:text-accent cursor-pointer bg-transparent"
+          asChild
+        >
           <Link href="/">
             <ArrowLeft className="size-4" />
           </Link>
@@ -251,7 +256,7 @@ export function Chat({ roomId }: { roomId: string }) {
 
       <CardFooter className="bg-transparent p-6">
         <form onSubmit={handleSend} className="flex w-full items-center gap-3">
-          <InputGroup className="border-border border shadow-none">
+          <InputGroup className="border-border! border bg-transparent! shadow-none">
             <TextareaAutosize
               value={content}
               onChange={(e) => setContent(e.target.value)}
