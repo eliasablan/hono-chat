@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/input-group";
 import TextareaAutosize from "react-textarea-autosize";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { roomMessagesOptions, roomOptions } from "@/query-options/rooms";
 
 const formatter = new Intl.DateTimeFormat("es-ES", {
   year: "numeric",
@@ -103,28 +104,13 @@ export function Chat({ roomId }: { roomId: string }) {
   const socketRef = useRef<ReturnType<typeof connectChatWS> | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: messages = [], isLoading: loadingMessages } =
-    useQuery<ListRoomMessagesResponse>({
-      queryKey: ["room-messages", roomId],
-      queryFn: async () => {
-        const res = await apiClient.api.rooms[":roomId"].messages.$get({
-          param: { roomId },
-        });
-        if (!res.ok) throw new Error("Failed to fetch messages");
-        return (await res.json()) as ListRoomMessagesResponse;
-      },
-    });
+  const { data: messages = [], isLoading: loadingMessages } = useQuery(
+    roomMessagesOptions(roomId),
+  );
 
-  const { data: room, isLoading: loadingRoomName } = useQuery<GetRoomResponse>({
-    queryKey: ["room", roomId],
-    queryFn: async () => {
-      const res = await apiClient.api.rooms[":roomId"].$get({
-        param: { roomId },
-      });
-      if (!res.ok) throw new Error("Failed to fetch room");
-      return (await res.json()) as GetRoomResponse;
-    },
-  });
+  const { data: room, isLoading: loadingRoomName } = useQuery(
+    roomOptions(roomId),
+  );
   const roomName = room?.name || "";
 
   const updateScrollButtonVisibility = useCallback(() => {
