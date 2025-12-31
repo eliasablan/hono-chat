@@ -242,19 +242,18 @@ export function Chat({ roomId }: { roomId: string }) {
         <div ref={messagesEndRef} />
       </CardContent>
 
-      {showScrollButton && (
-        <Button
-          size="icon"
-          className="bg-primary/70 absolute right-1/2 bottom-24 translate-x-1/2 shadow"
-          onClick={() =>
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-          }
-        >
-          <ArrowDown />
-        </Button>
-      )}
-
-      <CardFooter className="bg-transparent p-6">
+      <CardFooter className="relative bg-transparent p-6 pt-0">
+        {showScrollButton && (
+          <Button
+            size="icon"
+            className="bg-primary/70 absolute -top-12 right-1/2 translate-x-1/2 shadow"
+            onClick={() =>
+              messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+            }
+          >
+            <ArrowDown />
+          </Button>
+        )}
         <form onSubmit={handleSend} className="flex w-full items-center gap-3">
           <InputGroup className="border-border! border bg-transparent! shadow-none">
             <TextareaAutosize
