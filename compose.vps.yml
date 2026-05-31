@@ -33,12 +33,14 @@ services:
       - hono-chat
   backend:
     image: ghcr.io/eliasablan/hono-chat-backend:latest
+    platform: linux/amd64
+    pull_policy: always
     ports:
-      - 127.0.0.1:8787:8787
+      - 127.0.0.1:${BACKEND_PORT:-8787}:8787
     restart: unless-stopped
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      PORT: 8787
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}}
+      PORT: ${BACKEND_PORT:-8787}
     depends_on:
       db:
         condition: service_healthy
@@ -46,8 +48,10 @@ services:
       - hono-chat
   frontend:
     image: ghcr.io/eliasablan/hono-chat-frontend:latest
+    platform: linux/amd64
+    pull_policy: always
     ports:
-      - 127.0.0.1:5016:3000
+      - 127.0.0.1:${FRONTEND_PORT:-5016}:3000
     restart: unless-stopped
     depends_on:
       backend:
