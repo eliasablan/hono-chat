@@ -36,19 +36,19 @@ docker compose up -d postgres
 3. Backend (migraciones + server):
 
 ```bash
-bun --cwd backend run start
+bun run --cwd backend start
 ```
 
 En modo watch:
 
 ```bash
-bun --cwd backend run dev
+bun run --cwd backend dev
 ```
 
 4. Frontend (Next dev server):
 
 ```bash
-bun --cwd frontend run dev
+bun run --cwd frontend dev
 ```
 
 Abrí `http://localhost:3000`.
@@ -60,14 +60,16 @@ Abrí `http://localhost:3000`.
 El backend usa:
 
 - `PORT` (default `8787`)
-- `DATABASE_URL` (requerida, ej. `postgres://user:pass@localhost:5432/test-hono-chat`)
+- `DATABASE_URL` (requerida, ej. `postgres://cerbero:abcdef@localhost:5432/hono-chat`)
 
-Los campos `DB_*` existen en `backend/.env` pero el código conecta usando únicamente `DATABASE_URL` (ver `backend/src/db/client.ts`).
+El archivo local `backend/.env` ya queda preparado para usar Postgres desde `docker compose up -d postgres`.
 
 ### Frontend (`frontend/.env`)
 
 - `NEXT_PUBLIC_API_URL` (usado en desarrollo como base URL del cliente HTTP)
-- `NEXT_PUBLIC_WS_URL` (hoy no se usa en el código; ver nota más abajo)
+- `NEXT_PUBLIC_WS_URL` (usado en desarrollo como URL del WebSocket)
+
+El archivo local `frontend/.env` ya queda preparado para hablar con el backend en `localhost:8787`.
 
 Nota: el frontend, cuando se build-ea en modo producción, asume **mismo origen** para `/api/*` y `/ws` (base URL vacía + WS a `/<host>/ws`). Para deploy suele requerir un reverse proxy que enrute:
 
@@ -230,14 +232,14 @@ Orienta el deploy usando imágenes `ghcr.io/eliasablan/hono-chat-*` e incluye `p
 
 Backend:
 
-- `bun --cwd backend run dev`
-- `bun --cwd backend run typecheck`
-- `bun --cwd backend run db:generate`
-- `bun --cwd backend run db:migrate`
+- `bun run --cwd backend dev`
+- `bun run --cwd backend typecheck`
+- `bun run --cwd backend db:generate`
+- `bun run --cwd backend db:migrate`
 
 Frontend:
 
-- `bun --cwd frontend run dev`
-- `bun --cwd frontend run build`
-- `bun --cwd frontend run start`
-- `bun --cwd frontend run typecheck`
+- `bun run --cwd frontend dev`
+- `bun run --cwd frontend build`
+- `bun run --cwd frontend start`
+- `bun run --cwd frontend typecheck`
