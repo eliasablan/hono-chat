@@ -3,7 +3,11 @@ import { getQueryClient } from "@/lib/get-query-client";
 import { roomMessagesOptions, roomOptions } from "@/query-options/rooms";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 
-export default async function Page(props: PageProps<"/[roomId]">) {
+type RoomPageProps = {
+  params: Promise<{ roomId: string }>;
+};
+
+export default async function Page(props: RoomPageProps) {
   const { roomId } = await props.params;
   const queryClient = getQueryClient();
 
