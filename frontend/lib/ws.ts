@@ -15,9 +15,10 @@ export function connectChatWS(onEvent: (ev: ServerToClientEvent) => void): {
   close: () => void;
 } {
   const url =
-    process.env.NODE_ENV === "production"
+    process.env.NEXT_PUBLIC_WS_URL ??
+    (process.env.NODE_ENV === "production"
       ? fallbackWsUrl
-      : "ws://localhost:8787/ws";
+      : "ws://localhost:8787/ws");
 
   let ws: WebSocket | null = null;
   const pending: ClientToServerEvent[] = [];
@@ -72,7 +73,7 @@ export function connectChatWS(onEvent: (ev: ServerToClientEvent) => void): {
     const maxDelayMs = 30_000;
     const exponentialDelay = Math.min(
       baseDelayMs * 2 ** reconnectAttempt,
-      maxDelayMs
+      maxDelayMs,
     );
     const jitter = Math.floor(Math.random() * 250);
     const delay = exponentialDelay + jitter;
