@@ -1,6 +1,5 @@
 services:
   backend:
-    image: ghcr.io/eliasablan/hono-chat-backend:latest
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -17,7 +16,6 @@ services:
       - backend
 
   frontend:
-    image: ghcr.io/eliasablan/hono-chat-frontend:latest
     build:
       context: .
       dockerfile: frontend/Dockerfile
