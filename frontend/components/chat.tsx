@@ -4,13 +4,11 @@ import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { apiClient } from "@/lib/api-client";
 import { connectChatWS } from "@/lib/ws";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/lib/hooks/use-user";
 import type { ClientToServerEvent } from "@backend/contracts/events";
 import type { ListRoomMessagesResponse } from "@backend/contracts/chat";
-import type { GetRoomResponse } from "@backend/contracts/rooms";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -99,6 +97,7 @@ export function Chat({ roomId }: { roomId: string }) {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const userId = useUserStore((state) => state.id);
   const socketRef = useRef<ReturnType<typeof connectChatWS> | null>(null);
@@ -122,9 +121,7 @@ export function Chat({ roomId }: { roomId: string }) {
     setShowScrollButton(canScroll && !isAtBottom);
   }, []);
 
-  // enviar mensaje al servidor por WS
-  const handleSend = (e?: React.FormEvent<HTMLFormElement>) => {
-    e?.preventDefault();
+  const sendMessage = useCallback(() => {
     if (!content.trim()) return;
     if (!userId) {
       console.error("User id missing, cannot send message");
@@ -143,6 +140,21 @@ export function Chat({ roomId }: { roomId: string }) {
     };
     socketRef.current.send(ev);
     setContent("");
+  }, [content, roomId, userId]);
+
+  // enviar mensaje al servidor por WS
+  const handleSend = (e?: React.FormEvent<HTMLFormElement>) => {
+    e?.preventDefault();
+    sendMessage();
+  };
+
+  const handleMessageKeyDown = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>,
+  ) => {
+    if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing) return;
+
+    e.preventDefault();
+    sendMessage();
   };
 
   useEffect(() => {
@@ -183,6 +195,10 @@ export function Chat({ roomId }: { roomId: string }) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
+
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, [roomId]);
 
   useEffect(() => {
     const el = messagesContainerRef.current;
@@ -263,8 +279,10 @@ export function Chat({ roomId }: { roomId: string }) {
         <form onSubmit={handleSend} className="flex w-full items-center gap-3">
           <InputGroup className="border-border! border bg-transparent! shadow-none">
             <TextareaAutosize
+              ref={textareaRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
+              onKeyDown={handleMessageKeyDown}
               data-slot="input-group-control"
               className="flex field-sizing-content max-h-32 min-h-16 w-full resize-none rounded-md px-3 py-2.5 outline-none md:text-sm"
               placeholder="Escribe tu mensaje aquí..."
