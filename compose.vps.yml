@@ -35,6 +35,15 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.hono-chat-backend.rule=Host(`${APP_DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/ws`))
+      - traefik.http.routers.hono-chat-backend.entrypoints=websecure
+      - traefik.http.routers.hono-chat-backend.tls=true
+      - traefik.http.routers.hono-chat-backend.tls.certresolver=letsencrypt
+      - traefik.http.routers.hono-chat-backend.priority=100
+      - traefik.http.services.hono-chat-backend.loadbalancer.server.port=8787
     ports:
       - 127.0.0.1:${BACKEND_PORT:-8787}:8787
     restart: unless-stopped
@@ -46,6 +55,7 @@ services:
         condition: service_healthy
     networks:
       - hono-chat
+      - dokploy-network
   frontend:
     build:
       context: .
@@ -66,3 +76,5 @@ volumes:
 networks:
   hono-chat:
     driver: bridge
+  dokploy-network:
+    external: true
