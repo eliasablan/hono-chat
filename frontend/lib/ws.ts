@@ -15,7 +15,7 @@ export function connectChatWS(onEvent: (ev: ServerToClientEvent) => void): {
   close: () => void;
 } {
   const url =
-    process.env.NEXT_PUBLIC_WS_URL ??
+    process.env.NEXT_PUBLIC_WS_URL ||
     (process.env.NODE_ENV === "production"
       ? fallbackWsUrl
       : "ws://localhost:8787/ws");
